@@ -1951,14 +1951,18 @@
     const dropCard = document.getElementById('drop-card');
     const pdfInput = document.getElementById('pdf-input');
 
-    dropCard.addEventListener('dragover', e => { e.preventDefault(); dropCard.classList.add('over'); });
-    dropCard.addEventListener('dragleave', () => dropCard.classList.remove('over'));
-    dropCard.addEventListener('drop', e => {
-      e.preventDefault(); dropCard.classList.remove('over');
-      const f = e.dataTransfer.files[0];
-      if (f?.type === 'application/pdf') loadPDF(f);
-    });
-    pdfInput.addEventListener('change', () => { if (pdfInput.files[0]) loadPDF(pdfInput.files[0]); });
+    if (dropCard) {
+      dropCard.addEventListener('dragover', e => { e.preventDefault(); dropCard.classList.add('over'); });
+      dropCard.addEventListener('dragleave', () => dropCard.classList.remove('over'));
+      dropCard.addEventListener('drop', e => {
+        e.preventDefault(); dropCard.classList.remove('over');
+        const f = e.dataTransfer.files[0];
+        if (f?.type === 'application/pdf') loadPDF(f);
+      });
+    }
+    if (pdfInput) {
+      pdfInput.addEventListener('change', () => { if (pdfInput.files[0]) loadPDF(pdfInput.files[0]); });
+    }
 
     /* ══════════════════════════════════════════
        LOAD PDF → CONVERT → UPLOAD
@@ -2245,6 +2249,7 @@
     ══════════════════════════════════════════ */
     function setStep(step, state) {
       const el = document.getElementById(`step-${step}`);
+      if (!el) return;
       el.classList.remove('active', 'done');
       if (state) el.classList.add(state);
     }

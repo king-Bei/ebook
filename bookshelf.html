@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlipCloud · 書架</title>
+  <title>鑫囍探索旅遊手冊 目錄</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
@@ -907,48 +907,48 @@
         <button class="fbtn" data-f="pub" onclick="setF('pub',this)">已上架</button>
         <button class="fbtn" data-f="unp" onclick="setF('unp',this)">未上架</button>
       </div>
-      <div class="fbtns" id="cat-filter-btns" style="display:none">
-        <div class="vtog">
-          <button class="vbtn on" id="vg" onclick="setV('grid')"><svg viewBox="0 0 24 24">
-              <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8z" />
-            </svg></button>
-          <button class="vbtn" id="vl" onclick="setV('list')"><svg viewBox="0 0 24 24">
-              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-            </svg></button>
+      <div class="fbtns" id="cat-filter-btns" style="display:none"></div>
+
+      <div class="vtog">
+        <button class="vbtn on" id="vg" onclick="setV('grid')"><svg viewBox="0 0 24 24">
+            <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8z" />
+          </svg></button>
+        <button class="vbtn" id="vl" onclick="setV('list')"><svg viewBox="0 0 24 24">
+            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+          </svg></button>
+      </div>
+    </div>
+
+    <main class="bsec">
+      <div class="slbl" id="slbl">所有書籍</div>
+      <div id="grid">
+        <div class="sk">
+          <div class="skc"></div>
+          <div class="skl"></div>
+          <div class="skl s"></div>
+        </div>
+        <div class="sk">
+          <div class="skc"></div>
+          <div class="skl"></div>
+          <div class="skl s"></div>
+        </div>
+        <div class="sk">
+          <div class="skc"></div>
+          <div class="skl"></div>
+          <div class="skl s"></div>
         </div>
       </div>
+      <div id="empty">
+        <div class="ei">📚</div>
+        <div class="et">書架是空的</div>
+        <div class="es">前往管理後台上傳書籍</div>
+      </div>
+    </main>
 
-      <main class="bsec">
-        <div class="slbl" id="slbl">所有書籍</div>
-        <div id="grid">
-          <div class="sk">
-            <div class="skc"></div>
-            <div class="skl"></div>
-            <div class="skl s"></div>
-          </div>
-          <div class="sk">
-            <div class="skc"></div>
-            <div class="skl"></div>
-            <div class="skl s"></div>
-          </div>
-          <div class="sk">
-            <div class="skc"></div>
-            <div class="skl"></div>
-            <div class="skl s"></div>
-          </div>
-        </div>
-        <div id="empty">
-          <div class="ei">📚</div>
-          <div class="et">書架是空的</div>
-          <div class="es">前往管理後台上傳書籍</div>
-        </div>
-      </main>
-
-      <footer>
-        <div class="fl">FlipCloud</div>
-        <div class="fm" id="fm">—</div>
-      </footer>
-    </div>
+    <footer>
+      <div class="fl">FlipCloud</div>
+      <div class="fm" id="fm">—</div>
+    </footer>
 
     <div class="toast" id="toast"></div>
 

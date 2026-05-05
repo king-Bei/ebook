@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlipCloud · 管理後台</title>
+  <title>鑫囍探索旅遊手冊 管理後台</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
@@ -1294,7 +1294,7 @@
           <div class="sec">
             <div class="stl"><svg viewBox="0 0 24 24">
                 <path
-                  d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
+                  d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
               </svg>管理分類</div>
             <div style="display:flex;gap:8px;margin-bottom:16px">
               <input class="bts" id="cat-inp" placeholder="輸入新分類名稱" style="max-width:240px">
@@ -1620,11 +1620,18 @@
 
         // Upload pending cover if any
         if (pendingCoverDataUrl) {
+          const method = pendingCoverDataUrl === 'REMOVE' ? 'DELETE' : 'POST';
+          const body = pendingCoverDataUrl === 'REMOVE' ? null : JSON.stringify({ image: pendingCoverDataUrl });
+
           const cr = await fetch(`${WORKER_URL}/api/book/${editId}/cover`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey },
-            body: JSON.stringify({ image: pendingCoverDataUrl }),
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey },
+            body: body,
           });
-          if (cr.ok) { const cd = await cr.json(); if (i >= 0) allBooks[i].coverUrl = cd.coverUrl; }
+          if (cr.ok) {
+            const cd = await cr.json();
+            if (i >= 0) allBooks[i].coverUrl = cd.coverUrl || null;
+          }
         }
 
         renderTbl(); updateStats(); closeModal();
