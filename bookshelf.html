@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlipCloud · 書架</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+
+    :root {
+      --warm: #c8a96e;
+      --warm2: #a07840;
+      --paper: #f5f0e8;
+      --ink: #1a1208;
+      --bg: #0e0c08;
+      --card: #1a1510;
+      --border: #ffffff0c
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      font-family: 'Noto Serif TC', serif;
+      background: var(--bg);
+      color: var(--paper);
+      min-height: 100vh
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .3;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E")
+    }
+
+    #login {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg)
+    }
+
+    .lcard {
+      background: #1c1810;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 40px;
+      width: 340px;
+      text-align: center;
+      position: relative
+    }
+
+    .lcard::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--warm)44, transparent)
+    }
+
+    .l-logo {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 2rem;
+      color: var(--warm);
+      margin-bottom: 4px
+    }
+
+    .l-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      color: #ffffff22;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px
+    }
+
+    .l-lbl {
+      font-size: .8rem;
+      color: #ffffff44;
+      text-align: left;
+      margin-bottom: 8px
+    }
+
+    .l-inp {
+      width: 100%;
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--paper);
+      font-family: 'DM Mono', monospace;
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+      margin-bottom: 14px
+    }
+
+    .l-inp:focus {
+      border-color: var(--warm)55
+    }
+
+    .l-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--warm), var(--warm2));
+      color: var(--ink);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .l-btn:hover {
+      transform: translateY(-1px)
+    }
+
+    .l-err {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: #e74c3c;
+      margin-top: 10px;
+      display: none
+    }
+
+    #main {
+      display: none
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 18px 48px;
+      display: flex;
+      align-items: center;
+      background: #0e0c08f0;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px)
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.6rem;
+      color: var(--warm);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--warm);
+      border-radius: 50%
+    }
+
+    .hr {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      margin: 0 28px
+    }
+
+    .hbtn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: #ffffff55;
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all .2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px
+    }
+
+    .hbtn:hover {
+      color: var(--warm);
+      border-color: var(--warm)44;
+      background: #c8a96e08
+    }
+
+    .hbtn.pri {
+      background: linear-gradient(135deg, var(--warm), var(--warm2));
+      color: var(--ink);
+      border-color: transparent
+    }
+
+    .hbtn.pri:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px #c8a96e22
+    }
+
+    .hero {
+      position: relative;
+      z-index: 1;
+      padding: 56px 48px 40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 32px
+    }
+
+    .hero-t {
+      flex: 1
+    }
+
+    .hero-h {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      line-height: 1.1;
+      font-weight: 700
+    }
+
+    .hero-h em {
+      font-style: italic;
+      color: var(--warm)
+    }
+
+    .hero-s {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: #ffffff2a;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 10px
+    }
+
+    .hero-c {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: .9rem;
+      color: var(--warm);
+      opacity: .55;
+      white-space: nowrap
+    }
+
+    .toolbar {
+      position: relative;
+      z-index: 1;
+      padding: 0 48px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .sw {
+      position: relative;
+      flex: 1;
+      max-width: 280px
+    }
+
+    .si {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ffffff22;
+      font-size: .8rem;
+      pointer-events: none
+    }
+
+    .sinp {
+      width: 100%;
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px 8px 32px;
+      color: var(--paper);
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      outline: none;
+      transition: border-color .2s
+    }
+
+    .sinp:focus {
+      border-color: var(--warm)44
+    }
+
+    .sinp::placeholder {
+      color: #ffffff1a
+    }
+
+    .ssel {
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      color: #ffffff55;
+      font-family: 'DM Mono', monospace;
+      font-size: .74rem;
+      outline: none;
+      cursor: pointer
+    }
+
+    .ssel option {
+      background: #1a1510
+    }
+
+    .fbtns {
+      display: flex;
+      gap: 4px
+    }
+
+    .fbtn {
+      padding: 7px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: #ffffff33;
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap
+    }
+
+    .fbtn:hover {
+      color: var(--warm);
+      border-color: var(--warm)33
+    }
+
+    .fbtn.on {
+      background: #c8a96e18;
+      color: var(--warm);
+      border-color: var(--warm)44
+    }
+
+    .vtog {
+      display: flex;
+      gap: 3px;
+      margin-left: auto
+    }
+
+    .vbtn {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: #ffffff22;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .vbtn:hover,
+    .vbtn.on {
+      color: var(--warm);
+      border-color: var(--warm)44;
+      background: #c8a96e0a
+    }
+
+    .vbtn svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor
+    }
+
+    .bsec {
+      position: relative;
+      z-index: 1;
+      padding: 0 48px 80px
+    }
+
+    .slbl {
+      font-family: 'DM Mono', monospace;
+      font-size: .67rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #ffffff1a;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 18px
+    }
+
+    #grid.lv {
+      grid-template-columns: 1fr;
+      gap: 8px
+    }
+
+    .bc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all .3s;
+      animation: fu .4s ease both;
+      position: relative
+    }
+
+    @keyframes fu {
+      from {
+        opacity: 0;
+        transform: translateY(14px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .bc:hover {
+      border-color: var(--warm)33;
+      transform: translateY(-4px);
+      box-shadow: 0 14px 40px #00000055, 0 0 0 1px var(--warm)14
+    }
+
+    .sstrip {
+      height: 3px;
+      width: 100%;
+      background: #ffffff08
+    }
+
+    .sstrip.pub {
+      background: linear-gradient(90deg, #27ae60, #2ecc71)
+    }
+
+    .sstrip.sched {
+      background: linear-gradient(90deg, #e67e22, #f39c12)
+    }
+
+    .sstrip.unp {
+      background: #ffffff08
+    }
+
+    .sstrip.exp {
+      background: linear-gradient(90deg, #7f8c8d, #95a5a6)
+    }
+
+    .ccover {
+      aspect-ratio: 3/4;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(145deg, #2d1a04, #120a02)
+    }
+
+    .ccover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .4s
+    }
+
+    .bc:hover .ccover img {
+      transform: scale(1.04)
+    }
+
+    .cph {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center
+    }
+
+    .cph-o {
+      font-size: 1.3rem;
+      opacity: .3;
+      margin-bottom: 10px
+    }
+
+    .cph-t {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: .8rem;
+      color: var(--warm);
+      line-height: 1.3;
+      opacity: .8;
+      word-break: break-word
+    }
+
+    .cph-r {
+      width: 28px;
+      height: 1px;
+      background: var(--warm);
+      opacity: .3;
+      margin: 10px auto
+    }
+
+    /* Progress bar on card */
+    .prog-bar-wrap {
+      height: 3px;
+      background: #ffffff0a;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0
+    }
+
+    .prog-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--warm), #e8c880);
+      transition: width .3s
+    }
+
+    /* Category row */
+    .cat-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      flex-wrap: wrap
+    }
+
+    .cat-pill {
+      font-family: 'DM Mono', monospace;
+      font-size: .62rem;
+      color: #c8a96e99;
+      background: #c8a96e0a;
+      border: 1px solid #c8a96e22;
+      border-radius: 100px;
+      padding: 2px 8px;
+      white-space: nowrap
+    }
+
+    .cov {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, #00000088 100%)
+    }
+
+    .cbadge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #000000aa;
+      border: 1px solid var(--warm)33;
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-family: 'DM Mono', monospace;
+      font-size: .6rem;
+      color: var(--warm)
+    }
+
+    .pbadge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: .6rem;
+      letter-spacing: .5px;
+      backdrop-filter: blur(4px)
+    }
+
+    .pbadge.pub {
+      background: #27ae6088;
+      color: #a8ffb8;
+      border: 1px solid #27ae6066
+    }
+
+    .pbadge.sched {
+      background: #e67e2288;
+      color: #ffd8a0;
+      border: 1px solid #e67e2266
+    }
+
+    .pbadge.unp {
+      background: #ffffff14;
+      color: #ffffff44;
+      border: 1px solid #ffffff0a
+    }
+
+    .pbadge.exp {
+      background: #7f8c8d55;
+      color: #cccccc77;
+      border: 1px solid #7f8c8d33
+    }
+
+    .cbody {
+      padding: 12px 16px 14px
+    }
+
+    .cttl {
+      font-size: .86rem;
+      color: var(--paper);
+      line-height: 1.4;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden
+    }
+
+    .cmeta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .cpg {
+      font-family: 'DM Mono', monospace;
+      font-size: .66rem;
+      color: #ffffff2a
+    }
+
+    .cdt {
+      font-family: 'DM Mono', monospace;
+      font-size: .64rem;
+      color: #ffffff1a
+    }
+
+    .cacts {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #00000066;
+      opacity: 0;
+      transition: opacity .25s
+    }
+
+    .bc:hover .cacts {
+      opacity: 1
+    }
+
+    .abtn {
+      background: var(--card);
+      border: 1px solid var(--warm)44;
+      color: var(--warm);
+      border-radius: 9px;
+      padding: 8px 15px;
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      cursor: pointer;
+      transition: all .2s;
+      backdrop-filter: blur(10px)
+    }
+
+    .abtn:hover {
+      background: var(--warm);
+      color: var(--ink)
+    }
+
+    .abtn:disabled {
+      opacity: .3;
+      cursor: not-allowed
+    }
+
+    #grid.lv .bc {
+      display: flex;
+      border-radius: 10px
+    }
+
+    #grid.lv .ccover {
+      width: 72px;
+      height: 72px;
+      aspect-ratio: unset;
+      flex-shrink: 0;
+      border-radius: 8px 0 0 8px
+    }
+
+    #grid.lv .cbody {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      padding: 12px 16px
+    }
+
+    #grid.lv .cttl {
+      flex: 1;
+      margin: 0;
+      -webkit-line-clamp: 1
+    }
+
+    #grid.lv .cmeta {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0
+    }
+
+    #grid.lv .sstrip {
+      width: 4px;
+      height: auto;
+      position: absolute;
+      left: 72px;
+      top: 0;
+      bottom: 0;
+      border-radius: 0
+    }
+
+    #grid.lv .cacts {
+      border-radius: 10px
+    }
+
+    #empty {
+      display: none;
+      text-align: center;
+      padding: 80px 20px
+    }
+
+    .ei {
+      font-size: 2.8rem;
+      opacity: .15;
+      margin-bottom: 14px
+    }
+
+    .et {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.3rem;
+      color: #ffffff22
+    }
+
+    .es {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: #ffffff14;
+      margin-top: 8px
+    }
+
+    .sk {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden
+    }
+
+    .skc {
+      aspect-ratio: 3/4;
+      background: linear-gradient(90deg, #ffffff06 25%, #ffffff0c 50%, #ffffff06 75%);
+      background-size: 200%;
+      animation: shim 1.5s infinite
+    }
+
+    .skl {
+      height: 11px;
+      margin: 12px 16px 6px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #ffffff06 25%, #ffffff0c 50%, #ffffff06 75%);
+      background-size: 200%;
+      animation: shim 1.5s infinite
+    }
+
+    .skl.s {
+      width: 55%;
+      margin-top: 4px
+    }
+
+    @keyframes shim {
+      to {
+        background-position: -200% 0
+      }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1e2e1e;
+      color: #8dcc8d;
+      border: 1px solid #4d7d4d33;
+      border-radius: 100px;
+      padding: 10px 24px;
+      font-family: 'DM Mono', monospace;
+      font-size: .76rem;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 400;
+      pointer-events: none;
+      white-space: nowrap
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0)
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 22px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .fl {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: .95rem;
+      color: var(--warm);
+      opacity: .4
+    }
+
+    .fm {
+      font-family: 'DM Mono', monospace;
+      font-size: .66rem;
+      color: #ffffff14
+    }
+
+    @media(max-width:768px) {
+
+      header,
+      .hero,
+      .toolbar,
+      .bsec,
+      footer {
+        padding-left: 18px;
+        padding-right: 18px
+      }
+
+      .hero {
+        flex-direction: column;
+        align-items: flex-start
+      }
+
+      #grid {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+        gap: 12px
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="login">
+    <div class="lcard">
+      <div class="l-logo">FlipCloud</div>
+      <div class="l-sub">Private Library · 私人書架</div>
+      <div class="l-lbl">請輸入存取密碼</div>
+      <input class="l-inp" id="lpass" type="password" placeholder="Access Key">
+      <button class="l-btn" onclick="doLogin()">進入書架</button>
+      <div class="l-err" id="lerr">密碼錯誤，請重試</div>
+    </div>
+  </div>
+
+  <div id="main">
+    <header>
+      <a class="logo" href="bookshelf.html">
+        <div class="logo-dot"></div>FlipCloud
+      </a>
+      <div class="hr"></div>
+      <a class="hbtn" href="admin.html">管理後台</a>
+      <a class="hbtn pri" href="index.html">上傳書籍</a>
+    </header>
+
+    <section class="hero">
+      <div class="hero-t">
+        <div class="hero-h">我的<em>書架</em></div>
+        <div class="hero-s">FlipCloud Digital Library</div>
+      </div>
+      <div class="hero-c" id="hc">載入中…</div>
+    </section>
+
+    <div class="toolbar">
+      <div class="sw"><span class="si">🔍</span><input class="sinp" id="search" placeholder="搜尋書名…" oninput="applyF()">
+      </div>
+      <select class="ssel" id="sort" onchange="applyF()">
+        <option value="newest">最新上傳</option>
+        <option value="oldest">最早上傳</option>
+        <option value="title">書名排序</option>
+        <option value="pages">頁數</option>
+      </select>
+      <div class="fbtns" id="cat-btns">
+        <button class="fbtn on" data-f="all" onclick="setF('all',this)">全部</button>
+        <button class="fbtn" data-f="pub" onclick="setF('pub',this)">已上架</button>
+        <button class="fbtn" data-f="unp" onclick="setF('unp',this)">未上架</button>
+      </div>
+      <div class="fbtns" id="cat-filter-btns" style="display:none">
+        <div class="vtog">
+          <button class="vbtn on" id="vg" onclick="setV('grid')"><svg viewBox="0 0 24 24">
+              <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8z" />
+            </svg></button>
+          <button class="vbtn" id="vl" onclick="setV('list')"><svg viewBox="0 0 24 24">
+              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+            </svg></button>
+        </div>
+      </div>
+
+      <main class="bsec">
+        <div class="slbl" id="slbl">所有書籍</div>
+        <div id="grid">
+          <div class="sk">
+            <div class="skc"></div>
+            <div class="skl"></div>
+            <div class="skl s"></div>
+          </div>
+          <div class="sk">
+            <div class="skc"></div>
+            <div class="skl"></div>
+            <div class="skl s"></div>
+          </div>
+          <div class="sk">
+            <div class="skc"></div>
+            <div class="skl"></div>
+            <div class="skl s"></div>
+          </div>
+        </div>
+        <div id="empty">
+          <div class="ei">📚</div>
+          <div class="et">書架是空的</div>
+          <div class="es">前往管理後台上傳書籍</div>
+        </div>
+      </main>
+
+      <footer>
+        <div class="fl">FlipCloud</div>
+        <div class="fm" id="fm">—</div>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev';// ← 填入 Worker 網址
+
+      let adminKey = '', allBooks = [], curF = 'all', curV = 'grid', curCat = '', allCats = [];
+
+      function doLogin() {
+        const k = document.getElementById('lpass').value.trim(); if (!k) return;
+        fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': k } })
+          .then(r => { if (!r.ok) throw 0; return r.json() })
+          .then(d => { adminKey = k; sessionStorage.setItem('fc_key', k); allBooks = d; document.getElementById('login').style.display = 'none'; document.getElementById('main').style.display = ''; render(allBooks); updateMeta(); loadCatFilter(); })
+          .catch(() => { document.getElementById('lerr').style.display = 'block'; document.getElementById('lpass').value = '' });
+      }
+      document.getElementById('lpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
+      window.addEventListener('load', () => { const s = sessionStorage.getItem('fc_key'); if (s && WORKER_URL) { document.getElementById('lpass').value = s; doLogin() } });
+
+      async function loadCatFilter() {
+        try {
+          const r = await fetch(`${WORKER_URL}/api/categories`);
+          allCats = await r.json();
+        } catch { allCats = [] }
+        const wrap = document.getElementById('cat-filter-btns');
+        if (!allCats.length) { wrap.style.display = 'none'; return }
+        wrap.style.display = 'flex'; wrap.innerHTML = '';
+        const all = document.createElement('button'); all.className = 'fbtn on'; all.textContent = '所有分類';
+        all.onclick = () => { curCat = ''; document.querySelectorAll('#cat-filter-btns .fbtn').forEach(b => b.classList.remove('on')); all.classList.add('on'); applyF() };
+        wrap.appendChild(all);
+        allCats.forEach(c => {
+          const b = document.createElement('button'); b.className = 'fbtn'; b.textContent = c;
+          b.onclick = () => { curCat = c; document.querySelectorAll('#cat-filter-btns .fbtn').forEach(x => x.classList.remove('on')); b.classList.add('on'); applyF() };
+          wrap.appendChild(b);
+        });
+      }
+
+      function getProgress(id) { try { return parseInt(localStorage.getItem(`fc_prog_${id}`)) || 0 } catch { return 0 } }
+
+      function status(b) {
+        if (!b.published) return 'unp';
+        const n = Date.now();
+        if (b.publishAt && new Date(b.publishAt).getTime() > n) return 'sched';
+        if (b.unpublishAt && new Date(b.unpublishAt).getTime() <= n) return 'exp';
+        return 'pub';
+      }
+      const SLBL = { pub: '已上架', sched: '排程上架', unp: '未上架', exp: '已下架' };
+
+      function setF(f, btn) { curF = f; document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('on', b.dataset.f === f)); applyF() }
+      function setV(v) { curV = v; document.getElementById('grid').classList.toggle('lv', v === 'list'); document.getElementById('vg').classList.toggle('on', v === 'grid'); document.getElementById('vl').classList.toggle('on', v === 'list') }
+
+      function applyF() {
+        const q = document.getElementById('search').value.trim().toLowerCase();
+        const s = document.getElementById('sort').value;
+        let l = [...allBooks];
+        if (q) l = l.filter(b => b.title.toLowerCase().includes(q));
+        if (curF === 'pub') l = l.filter(b => status(b) === 'pub');
+        if (curF === 'unp') l = l.filter(b => status(b) !== 'pub');
+        if (curCat) l = l.filter(b => (b.category || '') === curCat);
+        l.sort((a, b) => {
+          if (s === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+          if (s === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+          if (s === 'title') return a.title.localeCompare(b.title, 'zh-TW');
+          if (s === 'pages') return b.pageCount - a.pageCount;
+          return 0;
+        });
+        render(l);
+        document.getElementById('slbl').textContent = l.length !== allBooks.length ? `篩選結果 ${l.length} / ${allBooks.length} 本` : `所有書籍（${allBooks.length} 本）`;
+      }
+
+      function render(list) {
+        const g = document.getElementById('grid'), em = document.getElementById('empty');
+        if (!list.length) { g.innerHTML = ''; em.style.display = 'block'; return }
+        em.style.display = 'none'; g.innerHTML = '';
+        list.forEach((b, i) => {
+          const st = status(b), dt = new Date(b.createdAt).toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }), canR = st === 'pub';
+          const prog = getProgress(b.id);
+          const viewsHtml = b.views ? `<span class="cpg" style="color:#ffffff1a">${b.views.toLocaleString()} 次</span>` : '';
+          const card_meta = `<div class="cmeta"><span class="cpg">${b.pageCount} 頁</span>${viewsHtml}<span class="cdt">${dt}</span></div>`;
+          const progPct = b.pageCount > 0 ? Math.min(100, Math.round(prog / (Math.ceil(b.pageCount / 2) + 1) * 100)) : 0;
+          const catHtml = b.category ? `<div class="cat-row"><span class="cat-pill">${esc(b.category)}</span></div>` : '';
+          const coverHtml = b.coverUrl
+            ? `<img src="${esc(b.coverUrl)}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`
+            : `<div class="cph"><div class="cph-o">❧</div><div class="cph-t">${esc(b.title)}</div><div class="cph-r"></div></div>`;
+          const c = document.createElement('div'); c.className = 'bc'; c.style.animationDelay = (i * .035) + 's';
+          c.innerHTML = `<div class="sstrip ${st}"></div>
+<div class="ccover" style="position:relative">${coverHtml}
+<div class="cov"></div><div class="cbadge">${b.pageCount} P</div><div class="pbadge ${st}">${SLBL[st]}</div>
+<div class="cacts">
+  <button class="abtn" ${canR ? '' : 'disabled'} onclick="openB('${b.id}',event)">${canR ? '閱讀' : '未開放'}</button>
+  <button class="abtn" onclick="copyL('${b.id}','${st}',event)">連結</button>
+</div></div>
+<div class="cbody">
+${catHtml}
+<div class="cttl">${esc(b.title)}</div>
+${card_meta}
+${progPct > 0 ? `<div class="prog-bar-wrap" style="margin-top:8px;border-radius:4px;overflow:hidden"><div class="prog-bar-fill" style="width:${progPct}%"></div></div>` : ''}
+</div>`;
+          c.addEventListener('click', ev => { if (!ev.target.closest('.abtn') && canR) openB(b.id, ev) });
+          g.appendChild(c);
+        });
+      }
+
+      function updateMeta() {
+        const p = allBooks.filter(b => status(b) === 'pub').length;
+        document.getElementById('hc').textContent = `共 ${allBooks.length} 本 · ${p} 本已上架`;
+        document.getElementById('fm').textContent = `${allBooks.length} 本書籍 · FlipCloud`;
+      }
+
+      function openB(id, e) { e?.stopPropagation?.(); window.open(`${location.origin}/?book=${id}`, '_blank') }
+      function copyL(id, st, e) {
+        e?.stopPropagation?.();
+        if (st !== 'pub') { toast('⚠ 此書尚未上架'); return }
+        navigator.clipboard.writeText(`${location.origin}/?book=${id}`).then(() => toast('✓ 連結已複製'));
+      }
+
+      function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2500) }
+      function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+    </script>
+</body>
+
+</html>

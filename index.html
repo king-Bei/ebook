@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlipCloud · 雲端翻頁書</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
+
+    /* ── !! 設定你的 Worker 網址 !! ── */
+    /* 在下方 JS CONFIG 區塊修改 WORKER_URL */
+
+    :root {
+      --ink: #1a1208;
+      --paper: #f5f0e8;
+      --warm: #c8a96e;
+      --cream: #faf6ef;
+      --sidebar-w: 260px;
+      --toolbar-h: 52px;
+      --page-w: 400px;
+      --page-h: 533px;
+      --transition: .55s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Serif TC', serif;
+      background: #12100a;
+      height: 100vh;
+      overflow: hidden;
+      color: var(--paper);
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Ccircle cx='1' cy='1' r='.4' fill='%23fff' fill-opacity='.025'/%3E%3C/svg%3E");
+    }
+
+    /* ─────────── UNAVAILABLE SCREEN ─────────── */
+    #unavail-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 250;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #12100a;
+      flex-direction: column;
+      gap: 14px;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .uv-icon {
+      font-size: 3rem;
+      opacity: .25;
+      margin-bottom: 4px;
+    }
+
+    .uv-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 2rem;
+      color: var(--warm);
+    }
+
+    .uv-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: .82rem;
+      color: #ffffff33;
+      max-width: 320px;
+      line-height: 1.6;
+    }
+
+    .uv-time {
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: var(--warm);
+      opacity: .5;
+      background: #c8a96e0a;
+      border: 1px solid #c8a96e22;
+      border-radius: 8px;
+      padding: 8px 18px;
+    }
+
+    .uv-back {
+      margin-top: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: #ffffff22;
+      text-decoration: none;
+      letter-spacing: 1px;
+      transition: color .2s;
+    }
+
+    .uv-back:hover {
+      color: var(--warm);
+    }
+
+    /* ─────────── RESUME DIALOG ─────────── */
+    #resume-dialog {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e1a10;
+      border: 1px solid var(--warm)44;
+      border-radius: 16px;
+      padding: 16px 22px;
+      z-index: 150;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px #00000066;
+      opacity: 0;
+      transition: all .35s ease;
+      white-space: nowrap;
+    }
+
+    #resume-dialog.show {
+      display: flex;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      align-items: center;
+      gap: 14px;
+    }
+
+    .rd-text {
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: #ffffff66;
+    }
+
+    .rd-text strong {
+      color: var(--warm);
+    }
+
+    .rd-yes {
+      background: var(--warm);
+      color: #1a1208;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .rd-yes:hover {
+      background: #d4b47a;
+    }
+
+    .rd-no {
+      background: transparent;
+      color: #ffffff33;
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      cursor: pointer;
+      transition: color .2s;
+    }
+
+    .rd-no:hover {
+      color: #ffffff66;
+    }
+
+    /* ─────────── UPLOAD SCREEN ─────────── */
+    #upload-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #12100a;
+    }
+
+    .upload-wrap {
+      text-align: center;
+      max-width: 520px;
+      width: 92%;
+    }
+
+    .logo-mark {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 2.2rem;
+      color: var(--warm);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .logo-pip {
+      width: 10px;
+      height: 10px;
+      background: var(--warm);
+      border-radius: 50%;
+    }
+
+    .upload-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: #ffffff33;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+
+    /* Upload mode toggle */
+    .mode-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      background: #ffffff08;
+      border-radius: 12px;
+      padding: 4px;
+    }
+
+    .mode-tab {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      background: transparent;
+      border-radius: 9px;
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff44;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .mode-tab.active {
+      background: #c8a96e22;
+      color: var(--warm);
+    }
+
+    .mode-tab:hover:not(.active) {
+      color: #ffffff77;
+    }
+
+    /* Upload panes */
+    .upload-pane {
+      display: none;
+    }
+
+    .upload-pane.active {
+      display: block;
+    }
+
+    .drop-card {
+      background: #ffffff07;
+      border: 1px dashed #c8a96e44;
+      border-radius: 20px;
+      padding: 44px 32px;
+      cursor: pointer;
+      transition: all .3s;
+      position: relative;
+    }
+
+    .drop-card:hover,
+    .drop-card.over {
+      border-color: var(--warm);
+      background: #c8a96e08;
+    }
+
+    .drop-card input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      opacity: .7;
+    }
+
+    .drop-title {
+      font-size: 1rem;
+      color: var(--paper);
+      margin-bottom: 8px;
+    }
+
+    .drop-hint {
+      font-family: 'DM Mono', monospace;
+      font-size: .73rem;
+      color: #ffffff44;
+      line-height: 1.6;
+    }
+
+    .drop-hint strong {
+      color: var(--warm);
+    }
+
+    /* Open by ID */
+    .open-id-form {
+      background: #ffffff07;
+      border: 1px solid #ffffff0e;
+      border-radius: 20px;
+      padding: 40px 32px;
+    }
+
+    .oi-label {
+      font-size: .9rem;
+      color: var(--paper);
+      margin-bottom: 16px;
+    }
+
+    .oi-input {
+      width: 100%;
+      background: #ffffff0a;
+      border: 1px solid #ffffff14;
+      border-radius: 12px;
+      padding: 13px 18px;
+      color: var(--paper);
+      font-family: 'DM Mono', monospace;
+      font-size: 1.1rem;
+      text-align: center;
+      letter-spacing: 3px;
+      outline: none;
+      transition: border-color .2s;
+      margin-bottom: 14px;
+    }
+
+    .oi-input:focus {
+      border-color: var(--warm)66;
+    }
+
+    .oi-input::placeholder {
+      color: #ffffff22;
+      letter-spacing: 1px;
+    }
+
+    .oi-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--warm), #a07840);
+      color: #1a1208;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .oi-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    /* Recent books */
+    .recent-books {
+      margin-top: 24px;
+      text-align: left;
+    }
+
+    .rb-title {
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #ffffff33;
+      margin-bottom: 10px;
+    }
+
+    .rb-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .rb-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff07;
+      border: 1px solid #ffffff08;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .rb-item:hover {
+      background: #c8a96e10;
+      border-color: #c8a96e22;
+    }
+
+    .rb-name {
+      font-size: .85rem;
+      color: #ffffff88;
+    }
+
+    .rb-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      color: #ffffff33;
+    }
+
+    /* Upload button */
+    .upload-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      padding: 13px 30px;
+      background: linear-gradient(135deg, var(--warm), #a07840);
+      color: #1a1208;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .25s;
+      box-shadow: 0 8px 30px #c8a96e2a;
+    }
+
+    .upload-cta:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Config warning */
+    .cfg-warn {
+      background: #3d2000;
+      border: 1px solid #c8a96e44;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: .73rem;
+      color: #c8a96e99;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .cfg-warn.show {
+      display: block;
+    }
+
+    /* ─────────── PROGRESS ─────────── */
+    #progress-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 199;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #12100a;
+    }
+
+    .prog-card {
+      text-align: center;
+      width: 340px;
+      background: #ffffff08;
+      border: 1px solid #ffffff0f;
+      border-radius: 20px;
+      padding: 44px 36px;
+    }
+
+    .prog-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .prog-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: #ffffff33;
+      transition: color .3s;
+    }
+
+    .prog-step.done {
+      color: #8dcc8d;
+    }
+
+    .prog-step.active {
+      color: var(--warm);
+    }
+
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffffff11;
+      transition: background .3s;
+      flex-shrink: 0;
+    }
+
+    .prog-step.done .step-dot {
+      background: #5d9b5d;
+    }
+
+    .prog-step.active .step-dot {
+      background: var(--warm);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .prog-bg {
+      background: #ffffff0e;
+      border-radius: 100px;
+      height: 5px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--warm), #f0d090);
+      transition: width .25s ease;
+      width: 0;
+    }
+
+    .prog-label {
+      font-family: 'DM Mono', monospace;
+      font-size: .73rem;
+      color: #ffffff44;
+      margin-top: 10px;
+    }
+
+    /* ─────────── APP SHELL (same as v2) ─────────── */
+    #app {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    #topbar {
+      height: var(--toolbar-h);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: #1a1510ee;
+      border-bottom: 1px solid #ffffff0a;
+      backdrop-filter: blur(20px);
+      padding: 0 16px;
+      position: relative;
+      z-index: 50;
+    }
+
+    .tb-logo {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.2rem;
+      color: var(--warm);
+      margin-right: 16px;
+      white-space: nowrap;
+    }
+
+    .tb-sep {
+      width: 1px;
+      height: 24px;
+      background: #ffffff12;
+      margin: 0 12px;
+    }
+
+    .tb-book-title {
+      font-size: .85rem;
+      color: #ffffff77;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 240px;
+      flex-shrink: 1;
+    }
+
+    /* Cloud badge */
+    .tb-cloud {
+      font-family: 'DM Mono', monospace;
+      font-size: .65rem;
+      color: var(--warm);
+      background: #c8a96e18;
+      border: 1px solid #c8a96e33;
+      border-radius: 6px;
+      padding: 3px 7px;
+      margin-left: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tb-spacer {
+      flex: 1;
+    }
+
+    .tb-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #ffffff77;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all .2s;
+      flex-shrink: 0;
+    }
+
+    .tb-btn:hover {
+      background: #ffffff10;
+      color: var(--warm);
+    }
+
+    .tb-btn.active {
+      background: #c8a96e18;
+      color: var(--warm);
+    }
+
+    .tb-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* Share URL bar (inline in topbar) */
+    #share-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff08;
+      border: 1px solid var(--warm)33;
+      border-radius: 10px;
+      padding: 6px 12px;
+      max-width: 340px;
+      flex-shrink: 1;
+    }
+
+    #share-bar.visible {
+      display: flex;
+    }
+
+    .share-url-text {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: var(--warm);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .share-copy-btn {
+      background: var(--warm);
+      color: #1a1208;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+
+    .share-copy-btn:hover {
+      background: #d4b47a;
+    }
+
+    .share-copy-btn.done {
+      background: #5d9b5d;
+      color: #fff;
+    }
+
+    #body-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ─────────── SIDEBAR ─────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: #16130d;
+      border-right: 1px solid #ffffff08;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(0);
+      transition: transform .35s ease, width .35s ease;
+      overflow: hidden;
+      position: relative;
+      z-index: 20;
+    }
+
+    #sidebar.collapsed {
+      width: 0;
+      transform: translateX(calc(-1 * var(--sidebar-w)));
+    }
+
+    /* 手機版側邊欄遠罩 */
+    #sidebar-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: #00000055;
+      z-index: 40;
+      backdrop-filter: blur(1px);
+    }
+    #sidebar-overlay.show { display: block; }
+
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid #ffffff08;
+      flex-shrink: 0;
+    }
+
+    .stab {
+      flex: 1;
+      padding: 10px 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff44;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all .2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .stab.active {
+      color: var(--warm);
+      border-bottom-color: var(--warm);
+      background: #c8a96e08;
+    }
+
+    .sidebar-pane {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .sidebar-pane.active {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .thumb-item {
+      cursor: pointer;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1.5px solid transparent;
+      transition: all .2s;
+      background: #ffffff06;
+      position: relative;
+    }
+
+    .thumb-item:hover {
+      border-color: var(--warm)66;
+    }
+
+    .thumb-item.current {
+      border-color: var(--warm);
+      box-shadow: 0 0 12px #c8a96e22;
+    }
+
+    .thumb-item canvas,
+    .thumb-item img {
+      width: 100%;
+      display: block;
+    }
+
+    .thumb-num {
+      position: absolute;
+      bottom: 4px;
+      right: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: .6rem;
+      color: #ffffff66;
+      background: #00000044;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .2s;
+      border: 1px solid transparent;
+    }
+
+    .toc-item:hover {
+      background: #ffffff08;
+    }
+
+    .toc-item.current {
+      background: #c8a96e12;
+      border-color: #c8a96e22;
+    }
+
+    .toc-page {
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      color: #ffffff44;
+      min-width: 28px;
+    }
+
+    .toc-label {
+      font-size: .82rem;
+      color: #ffffff88;
+    }
+
+    .toc-item.current .toc-label {
+      color: var(--warm);
+    }
+
+    .sidebar-pane::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-pane::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-pane::-webkit-scrollbar-thumb {
+      background: #ffffff15;
+      border-radius: 2px;
+    }
+
+    /* ─────────── READER ─────────── */
+    #reader {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      background: radial-gradient(ellipse at center, #1e1a10 0%, #12100a 70%);
+    }
+
+    .book-stage {
+      perspective: 2200px;
+    }
+
+    .book-wrap {
+      width: calc(var(--page-w) * 2 + 8px);
+      height: var(--page-h);
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .book-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 5%;
+      right: 5%;
+      height: 30px;
+      background: radial-gradient(ellipse at center, #00000088 0%, transparent 70%);
+      filter: blur(10px);
+    }
+
+    .b-spine {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 100%;
+      background: linear-gradient(90deg, #2a1600, #6b3010, #8b4513, #6b3010, #2a1600);
+      z-index: 60;
+      box-shadow: 0 2px 20px #00000077;
+    }
+
+    .page-spread {
+      position: absolute;
+      inset: 0;
+      display: flex;
+    }
+
+    .page {
+      width: var(--page-w);
+      height: var(--page-h);
+      position: relative;
+      overflow: hidden;
+      background: var(--cream);
+    }
+
+    .page-l {
+      border-radius: 5px 0 0 5px;
+      box-shadow: -4px 0 20px #00000044;
+    }
+
+    .page-r {
+      border-radius: 0 5px 5px 0;
+      box-shadow: 4px 0 20px #00000044;
+    }
+
+    .page canvas,
+    .page img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .page-shadow-l {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 40px;
+      height: 100%;
+      background: linear-gradient(to right, transparent, #00000018);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .page-shadow-r {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 100%;
+      background: linear-gradient(to left, transparent, #00000018);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .page-num {
+      position: absolute;
+      bottom: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: .65rem;
+      color: #00000055;
+      z-index: 10;
+    }
+
+    .page-l .page-num {
+      right: 16px;
+    }
+
+    .page-r .page-num {
+      left: 16px;
+    }
+
+    .cover-inner {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #3d2204, #1a0e02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .cov-orn {
+      font-size: 1.8rem;
+      opacity: .4;
+      margin-bottom: 16px;
+    }
+
+    .cov-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(.9rem, 3vw, 1.4rem);
+      color: var(--warm);
+      line-height: 1.35;
+      margin-bottom: 14px;
+      word-break: break-all;
+    }
+
+    .cov-rule {
+      width: 50px;
+      height: 1px;
+      background: var(--warm);
+      opacity: .4;
+      margin: 0 auto 14px;
+    }
+
+    .cov-pages {
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      color: var(--warm);
+      opacity: .45;
+      letter-spacing: 1.5px;
+    }
+
+    .blank-pg {
+      width: 100%;
+      height: 100%;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Page loading skeleton */
+    .page-loading {
+      width: 100%;
+      height: 100%;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-loading::after {
+      content: '';
+      width: 24px;
+      height: 24px;
+      border: 2px solid #00000011;
+      border-top-color: var(--warm);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .flip-page {
+      position: absolute;
+      width: var(--page-w);
+      height: var(--page-h);
+      top: 0;
+      left: 0;
+      transform-style: preserve-3d;
+      transform-origin: right center;
+      transition: transform var(--transition);
+      z-index: 80;
+      display: none;
+      will-change: transform;
+    }
+
+    .flip-page.go {
+      transform: rotateY(-180deg);
+    }
+
+    .flip-face,
+    .flip-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      will-change: transform;
+    }
+
+    /* 翻頁時的重疊光影游燈（面面） */
+    .flip-face::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to left, rgba(0,0,0,0.18) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .flip-back::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(0,0,0,0.14) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .flip-face {
+      z-index: 2;
+      border-radius: 5px 0 0 5px;
+    }
+
+    .flip-back {
+      transform: rotateY(180deg);
+      border-radius: 0 5px 5px 0;
+    }
+
+    .flip-face canvas,
+    .flip-back canvas,
+    .flip-face img,
+    .flip-back img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: var(--cream);
+    }
+
+    .page-curl {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-color: transparent;
+      border-bottom-color: #e8e0d0;
+      border-right-color: #e8e0d0;
+      transition: all .3s;
+      cursor: pointer;
+      z-index: 10;
+      filter: drop-shadow(-2px -2px 4px #00000022);
+    }
+
+    .page-r .page-curl {
+      right: auto;
+      left: 0;
+      border-right-color: transparent;
+      border-left-color: #e8e0d0;
+    }
+
+    .page-l:hover .page-curl {
+      border-width: 0 0 28px 28px;
+    }
+
+    .page-r:hover .page-curl {
+      border-width: 0 28px 28px 0;
+    }
+
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .ctrl-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid #ffffff14;
+      background: #ffffff07;
+      color: var(--paper);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+    }
+
+    .ctrl-btn:hover:not(:disabled) {
+      background: #c8a96e18;
+      border-color: var(--warm)55;
+      transform: scale(1.08);
+    }
+
+    .ctrl-btn:disabled {
+      opacity: .2;
+      cursor: default;
+    }
+
+    .ctrl-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .page-chip {
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      color: #ffffff55;
+      background: #ffffff07;
+      border: 1px solid #ffffff0e;
+      padding: 6px 16px;
+      border-radius: 100px;
+      min-width: 90px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .page-chip:hover {
+      color: var(--warm);
+      border-color: var(--warm)44;
+    }
+
+    /* ─────────── OVERLAYS ─────────── */
+    #zoom-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: #000000cc;
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+
+    #zoom-overlay.open {
+      display: flex;
+    }
+
+    #zoom-img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 30px 80px #00000077;
+      cursor: default;
+      transition: transform .3s ease;
+    }
+
+    .zoom-toolbar {
+      position: absolute;
+      bottom: 28px;
+      display: flex;
+      gap: 8px;
+      background: #1a1510cc;
+      border: 1px solid #ffffff12;
+      border-radius: 12px;
+      padding: 8px;
+    }
+
+    .z-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #ffffff88;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all .2s;
+    }
+
+    .z-btn:hover {
+      background: #ffffff10;
+      color: var(--warm);
+    }
+
+    #qr-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      background: #000000bb;
+      backdrop-filter: blur(6px);
+    }
+
+    #qr-panel.open {
+      display: flex;
+    }
+
+    .qr-card {
+      background: #1e1a10;
+      border: 1px solid #c8a96e33;
+      border-radius: 20px;
+      padding: 36px 40px;
+      text-align: center;
+      width: 320px;
+      max-width: 90vw;
+    }
+
+    .qr-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.2rem;
+      color: var(--warm);
+      margin-bottom: 6px;
+    }
+
+    .qr-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      color: #ffffff33;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    #qr-canvas-wrap {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .qr-url {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: #c8a96e99;
+      word-break: break-all;
+      background: #ffffff07;
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      border: 1px solid #ffffff08;
+      transition: all .2s;
+      margin-bottom: 16px;
+    }
+
+    .qr-url:hover {
+      background: #ffffff0e;
+      color: var(--warm);
+    }
+
+    .qr-close {
+      background: transparent;
+      border: 1px solid #ffffff14;
+      color: #ffffff55;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .qr-close:hover {
+      color: var(--paper);
+      border-color: #ffffff33;
+    }
+
+    #jump-dialog {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      background: #00000099;
+    }
+
+    #jump-dialog.open {
+      display: flex;
+    }
+
+    .jump-card {
+      background: #1e1a10;
+      border: 1px solid #ffffff14;
+      border-radius: 16px;
+      padding: 28px 32px;
+      text-align: center;
+      width: 280px;
+    }
+
+    .jump-label {
+      font-size: .9rem;
+      color: var(--paper);
+      margin-bottom: 14px;
+    }
+
+    .jump-input {
+      width: 100%;
+      background: #ffffff0a;
+      border: 1px solid #ffffff14;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--paper);
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      text-align: center;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .jump-input:focus {
+      border-color: var(--warm)66;
+    }
+
+    .jump-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .jump-ok,
+    .jump-cancel {
+      flex: 1;
+      padding: 9px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .jump-ok {
+      background: var(--warm);
+      color: #1a1208;
+    }
+
+    .jump-cancel {
+      background: #ffffff0a;
+      color: #ffffff66;
+    }
+
+    /* Sound wave */
+    .sound-wave {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      height: 14px;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+
+    .sound-wave.playing {
+      opacity: 1;
+    }
+
+    .sw-bar {
+      width: 2px;
+      border-radius: 1px;
+      background: var(--warm);
+      animation: sw .8s ease-in-out infinite;
+    }
+
+    .sw-bar:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .sw-bar:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .sw-bar:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes sw {
+
+      0%,
+      100% {
+        height: 4px
+      }
+
+      50% {
+        height: 12px
+      }
+    }
+
+    .s-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1e2e1e;
+      color: #8dcc8d;
+      border: 1px solid #4d7d4d33;
+      border-radius: 100px;
+      padding: 10px 24px;
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 400;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .s-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --page-w: 88vw;
+        --page-h: calc(88vw * 1.41);
+        --sidebar-w: 75vw;
+      }
+
+      /* 手機版側邊欄：絕對定位疊加，不佔版面 */
+      #sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        max-width: 75vw;
+        box-shadow: 4px 0 24px #00000066;
+      }
+
+      #sidebar.collapsed {
+        width: 0;
+        transform: translateX(-100%);
+      }
+
+      /* 單頁模式調整 */
+      .is-mobile .book-wrap {
+        width: var(--page-w);
+      }
+      .is-mobile .page-l, .is-mobile .page-shadow-l, .is-mobile .b-spine {
+        display: none !important;
+      }
+      .is-mobile .page-r {
+        border-radius: 8px;
+        box-shadow: 0 10px 30px #00000044;
+      }
+      .is-mobile .flip-page {
+        width: var(--page-w);
+        left: 0 !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .tb-book-title {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Unavailable Screen ── -->
+  <div id="unavail-screen">
+    <div class="uv-icon" id="uv-icon">🔒</div>
+    <div class="uv-title" id="uv-title">尚未開放</div>
+    <div class="uv-sub" id="uv-sub">此書籍目前尚未公開上架。</div>
+    <div class="uv-time" id="uv-time" style="display:none"></div>
+    <a class="uv-back" href="bookshelf.html">← 返回書架</a>
+  </div>
+
+  <!-- ── Resume Dialog ── -->
+  <div id="resume-dialog">
+    <div class="rd-text">繼續上次閱讀？<strong id="rd-page">第 1 頁</strong></div>
+    <button class="rd-yes" onclick="resumeReading()">繼續</button>
+    <button class="rd-no" onclick="dismissResume()">從頭開始</button>
+  </div>
+
+  <!-- ── Upload Screen ── -->
+  <div id="upload-screen">
+    <div class="upload-wrap">
+      <div class="logo-mark">
+        <div class="logo-pip"></div>FlipCloud
+      </div>
+      <div class="upload-sub">Cloud Flipbook System</div>
+
+      <div class="cfg-warn" id="cfg-warn">
+        ⚠ 尚未設定 Worker 網址，雲端儲存功能將無法使用。<br>
+        請在頁面原始碼的 <code>CONFIG.WORKER_URL</code> 填入你的 Worker 網址。
+      </div>
+
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-upload" onclick="switchMode('upload')">上傳 PDF</button>
+        <button class="mode-tab" id="tab-open" onclick="switchMode('open')">開啟書籍</button>
+      </div>
+
+      <!-- Upload PDF pane -->
+      <div class="upload-pane active" id="pane-upload">
+        <div class="drop-card" id="drop-card">
+          <input type="file" id="pdf-input" accept=".pdf">
+          <div class="drop-icon">📖</div>
+          <div class="drop-title">上傳 PDF，轉成翻頁書</div>
+          <div class="drop-hint">拖曳至此，或 <strong>點擊選擇</strong><br>最多 50 頁 · 自動儲存雲端</div>
+        </div>
+        <button class="upload-cta" onclick="document.getElementById('pdf-input').click()">
+          <svg viewBox="0 0 24 24" width="16" fill="currentColor">
+            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+          </svg>
+          選擇 PDF 檔案
+        </button>
+      </div>
+
+      <!-- Open by ID pane -->
+      <div class="upload-pane" id="pane-open">
+        <div class="open-id-form">
+          <div class="oi-label">輸入書籍短碼</div>
+          <input class="oi-input" id="book-id-input" placeholder="e.g. abc123" maxlength="20">
+          <button class="oi-btn" onclick="openByID()">開啟書籍</button>
+        </div>
+
+        <div class="recent-books" id="recent-books-wrap" style="display:none">
+          <div class="rb-title">最近開啟</div>
+          <div class="rb-list" id="recent-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Progress Screen ── -->
+  <div id="progress-screen">
+    <div class="prog-card">
+      <div class="prog-steps">
+        <div class="prog-step active" id="step-convert">
+          <div class="step-dot"></div><span>轉換 PDF 頁面</span>
+        </div>
+        <div class="prog-step" id="step-upload">
+          <div class="step-dot"></div><span>上傳至雲端</span>
+        </div>
+        <div class="prog-step" id="step-link">
+          <div class="step-dot"></div><span>生成短連結</span>
+        </div>
+      </div>
+      <div class="prog-bg">
+        <div class="prog-fill" id="prog-fill"></div>
+      </div>
+      <div class="prog-label" id="prog-label">準備中…</div>
+    </div>
+  </div>
+
+  <!-- ── App Shell ── -->
+  <div id="app">
+    <!-- Topbar -->
+    <div id="topbar">
+      <div class="tb-logo">FlipCloud</div>
+      <div class="tb-sep"></div>
+      <div class="tb-book-title" id="tb-title">—</div>
+      <span class="tb-cloud" id="tb-cloud" style="display:none">☁ 雲端</span>
+      <div class="tb-spacer"></div>
+
+      <!-- Share bar (shows after upload) -->
+      <div id="share-bar">
+        <span class="share-url-text" id="share-url-text" onclick="copyShareUrl()"></span>
+        <button class="share-copy-btn" id="share-copy-btn" onclick="copyShareUrl()">複製</button>
+      </div>
+
+      <div class="tb-sep" id="sep-share" style="display:none"></div>
+
+      <button class="tb-btn" id="btn-sound" onclick="toggleSound()" title="翻頁音效">
+        <div class="sound-wave" id="sound-wave">
+          <div class="sw-bar"></div>
+          <div class="sw-bar"></div>
+          <div class="sw-bar"></div>
+        </div>
+        <svg id="sound-icon" viewBox="0 0 24 24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+        </svg>
+      </button>
+
+      <button class="tb-btn" onclick="zoomCurrent()" title="放大頁面">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z" />
+        </svg>
+      </button>
+
+      <button class="tb-btn" onclick="openQR()" title="QR Code">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm2 2h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm2 4h-2v2h2v-2z" />
+        </svg>
+      </button>
+
+      <button class="tb-btn" onclick="showEmbedCode()" title="嵌入代碼">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M20 3H4v10c0 1.1.9 2 2 2h6v2H8v2h8v-2h-4v-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 10H6V5h14v8zM4 19h2v2H4v-2zm4 0h2v2H8v-2zm4 0h2v2h-2v-2z" />
+        </svg>
+      </button>
+
+      <div class="tb-sep"></div>
+
+      <button class="tb-btn" id="btn-sidebar" onclick="toggleSidebar()" title="目錄">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+        </svg>
+      </button>
+
+      <button class="tb-btn" onclick="resetApp()" title="上傳新書">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+        </svg>
+      </button>
+    </div>
+
+    <div id="body-layout">
+      <!-- Sidebar -->
+      <div id="sidebar">
+        <div class="sidebar-tabs">
+          <button class="stab active" id="stab-thumb" onclick="switchTab('thumb')">縮圖</button>
+          <button class="stab" id="stab-toc" onclick="switchTab('toc')">目錄</button>
+        </div>
+        <div class="sidebar-pane active" id="pane-thumb">
+          <div class="thumb-grid" id="thumb-grid"></div>
+        </div>
+        <div class="sidebar-pane" id="pane-toc">
+          <div id="toc-list"></div>
+        </div>
+      </div>
+      <!-- 手機版遮罩 -->
+      <div id="sidebar-overlay" onclick="closeSidebarMobile()"></div>
+
+      <!-- Reader -->
+      <div id="reader">
+        <div class="book-stage">
+          <div class="book-wrap" id="book-wrap">
+            <div class="b-spine"></div>
+            <div class="page-spread" id="static-spread">
+              <div class="page page-l" id="page-l">
+                <div class="page-shadow-l"></div>
+                <div class="page-curl" onclick="turnPage(-1)"></div>
+              </div>
+              <div class="page page-r" id="page-r">
+                <div class="page-shadow-r"></div>
+                <div class="page-curl" onclick="turnPage(1)"></div>
+              </div>
+            </div>
+            <div class="flip-page" id="flip-page">
+              <div class="flip-face" id="flip-face"></div>
+              <div class="flip-back" id="flip-back"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="controls">
+          <button class="ctrl-btn" id="ctrl-first" onclick="goToSpread(0)">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z" />
+            </svg>
+          </button>
+          <button class="ctrl-btn" id="ctrl-prev" onclick="turnPage(-1)">
+            <svg viewBox="0 0 24 24">
+              <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+            </svg>
+          </button>
+          <div class="page-chip" id="page-chip" onclick="openJump()">— / —</div>
+          <button class="ctrl-btn" id="ctrl-next" onclick="turnPage(1)">
+            <svg viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+            </svg>
+          </button>
+          <button class="ctrl-btn" id="ctrl-last" onclick="goToSpread(999)">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2V6z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zoom Overlay -->
+  <div id="zoom-overlay" onclick="closeZoom()">
+    <img id="zoom-img" src="" alt="" onclick="event.stopPropagation()">
+    <div class="zoom-toolbar" onclick="event.stopPropagation()">
+      <button class="z-btn" onclick="zoomIn()">＋</button>
+      <button class="z-btn" onclick="zoomReset()">⊙</button>
+      <button class="z-btn" onclick="zoomOut()">－</button>
+      <button class="z-btn" onclick="closeZoom()">✕</button>
+    </div>
+  </div>
+
+  <!-- QR Panel -->
+  <div id="qr-panel" onclick="closeQR()">
+    <div class="qr-card" onclick="event.stopPropagation()">
+      <div class="qr-title">分享此書</div>
+      <div class="qr-sub">SCAN TO READ · 掃碼閱讀</div>
+      <div id="qr-canvas-wrap"></div>
+      <div class="qr-url" id="qr-url-display" onclick="copyShareUrl()">—</div>
+      <button class="qr-close" onclick="closeQR()">關閉</button>
+    </div>
+  </div>
+
+  <!-- Jump Dialog -->
+  <div id="jump-dialog">
+    <div class="jump-card">
+      <div class="jump-label">跳轉到頁碼</div>
+      <input class="jump-input" id="jump-input" type="number" min="1" placeholder="輸入頁碼">
+      <div class="jump-btns">
+        <button class="jump-cancel" onclick="closeJump()">取消</button>
+        <button class="jump-ok" onclick="doJump()">跳轉</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="s-toast" id="toast"></div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    /* ══════════════════════════════════════════
+       !! CONFIG — 修改這裡 !!
+    ══════════════════════════════════════════ */
+    const CONFIG = {
+      // 你的 Cloudflare Worker 網址，例如：
+      // 'https://flipcloud-api.yourname.workers.dev'
+      // 或自訂網域：'https://read.yourdomain.com'
+      WORKER_URL: 'https://flipcloud-api.khuang167.workers.dev',   // ← 填入你的 Worker 網址
+
+      // 上傳時壓縮畫質 (0.1–1.0)
+      PAGE_QUALITY: 0.82,
+
+      // 縮圖畫質
+      THUMB_QUALITY: 0.65,
+    };
+
+    /* ══════════════════════════════════════════
+       STATE
+    ══════════════════════════════════════════ */
+    let pages = [];
+    let thumbs = [];
+    let currentSpread = 0;
+    let totalSpreads = 0;
+    let isFlipping = false;
+    let sidebarOpen = true;
+    let soundEnabled = true;
+    let bookName = '';
+    let bookId = '';
+    let shareUrl = '';
+    let zoomLevel = 1;
+    let isCloudBook = false;
+    let qrGenerated = false;
+    let bookToken = '';       // password token
+    let isEmbedMode = false;  // ?embed=1
+    let isMobileView = false;
+    let readStartTime = null; // for read-time tracking
+    let readTimeBuffer = 0;   // accumulated seconds not yet sent
+
+    /* ══════════════════════════════════════════
+       INIT
+    ══════════════════════════════════════════ */
+    window.addEventListener('load', () => {
+      const urlParams = new URLSearchParams(location.search);
+      isEmbedMode = urlParams.get('embed') === '1';
+
+      if (isEmbedMode) applyEmbedMode();
+
+      if (!CONFIG.WORKER_URL) {
+        document.getElementById('cfg-warn').classList.add('show');
+      }
+
+      const bookParam = urlParams.get('book');
+      if (bookParam) {
+        loadCloudBook(bookParam);
+        return;
+      }
+
+      if (location.hash === '#book:session') {
+        const raw = sessionStorage.getItem('flipcloud_book');
+        if (raw) {
+          try {
+            const d = JSON.parse(raw);
+            // ── 優化：如果是雲端書籍但缺少頁面資料，自動重新從雲端載入 ──
+            if (d.cloud && d.id && (!d.p || d.p.length === 0)) {
+              loadCloudBook(d.id);
+              return;
+            }
+            bookName = d.n; pages = d.p; thumbs = d.t || [];
+            bookId = d.id || ''; isCloudBook = d.cloud || false;
+            shareUrl = bookId ? `${location.origin}/?book=${bookId}` : '';
+            initApp();
+            return;
+          } catch (e) {
+            console.error('Session load failed:', e);
+          }
+        }
+      }
+
+      loadRecentBooks();
+      show('upload-screen');
+      document.getElementById('btn-sound').classList.add('active');
+    });
+
+    function applyEmbedMode() {
+      // Hide header, upload, sidebar toggle, share — show minimal reader
+      document.body.style.overflow = 'hidden';
+      const style = document.createElement('style');
+      style.textContent = `
+    #upload-screen { display: none !important; }
+    #topbar .tb-logo, #topbar .tb-sep:first-of-type, #topbar .tb-book-title,
+    #topbar .tb-spacer, #share-bar, #sep-share,
+    #btn-sound, #btn-sidebar { display: none !important; }
+    #topbar { background: transparent; border: none; height: 40px; }
+  `;
+      document.head.appendChild(style);
+    }
+
+    /* ══════════════════════════════════════════
+       MODE TOGGLE (upload / open)
+    ══════════════════════════════════════════ */
+    function switchMode(mode) {
+      document.getElementById('tab-upload').classList.toggle('active', mode === 'upload');
+      document.getElementById('tab-open').classList.toggle('active', mode === 'open');
+      document.getElementById('pane-upload').classList.toggle('active', mode === 'upload');
+      document.getElementById('pane-open').classList.toggle('active', mode === 'open');
+    }
+
+    /* ══════════════════════════════════════════
+       DRAG & DROP
+    ══════════════════════════════════════════ */
+    const dropCard = document.getElementById('drop-card');
+    const pdfInput = document.getElementById('pdf-input');
+
+    dropCard.addEventListener('dragover', e => { e.preventDefault(); dropCard.classList.add('over'); });
+    dropCard.addEventListener('dragleave', () => dropCard.classList.remove('over'));
+    dropCard.addEventListener('drop', e => {
+      e.preventDefault(); dropCard.classList.remove('over');
+      const f = e.dataTransfer.files[0];
+      if (f?.type === 'application/pdf') loadPDF(f);
+    });
+    pdfInput.addEventListener('change', () => { if (pdfInput.files[0]) loadPDF(pdfInput.files[0]); });
+
+    /* ══════════════════════════════════════════
+       LOAD PDF → CONVERT → UPLOAD
+    ══════════════════════════════════════════ */
+    async function loadPDF(file) {
+      bookName = file.name.replace(/\.pdf$/i, '');
+      show('progress-screen'); hide('upload-screen');
+      setStep('convert', 'active');
+
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      const n = Math.min(pdf.numPages, 50);
+
+      pages = []; thumbs = [];
+      const fill = document.getElementById('prog-fill');
+      const label = document.getElementById('prog-label');
+
+      // ── Step 1: Convert pages ──
+      for (let i = 1; i <= n; i++) {
+        const pg = await pdf.getPage(i);
+
+        const vp = pg.getViewport({ scale: 1.8 });
+        const cv = document.createElement('canvas');
+        cv.width = vp.width; cv.height = vp.height;
+        await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        pages.push(cv.toDataURL('image/jpeg', CONFIG.PAGE_QUALITY));
+
+        const vpt = pg.getViewport({ scale: .35 });
+        const ct = document.createElement('canvas');
+        ct.width = vpt.width; ct.height = vpt.height;
+        await pg.render({ canvasContext: ct.getContext('2d'), viewport: vpt }).promise;
+        thumbs.push(ct.toDataURL('image/jpeg', CONFIG.THUMB_QUALITY));
+
+        const pct = (i / n) * (CONFIG.WORKER_URL ? 50 : 100);
+        fill.style.width = pct + '%';
+        label.textContent = `轉換第 ${i} / ${n} 頁…`;
+      }
+
+      setStep('convert', 'done');
+
+      // ── Step 2: Upload to Cloudflare ──
+      if (CONFIG.WORKER_URL) {
+        setStep('upload', 'active');
+        label.textContent = '正在上傳至雲端…';
+
+        try {
+          const res = await fetch(`${CONFIG.WORKER_URL}/api/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: bookName, pages }),
+          });
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+
+          bookId = data.id;
+          shareUrl = data.url;
+          isCloudBook = true;
+
+          setStep('upload', 'done');
+          fill.style.width = '85%';
+          label.textContent = '生成短連結…';
+
+          // ── Step 3: Short link ──
+          setStep('link', 'active');
+          await new Promise(r => setTimeout(r, 400));
+          setStep('link', 'done');
+          fill.style.width = '100%';
+
+          // Save to recent
+          saveRecent({ id: bookId, title: bookName, pageCount: pages.length });
+
+        } catch (e) {
+          console.error('Upload failed:', e);
+          let msg = '⚠ 上傳雲端失敗，以本地模式開啟';
+          if (e.message.includes('404')) {
+            msg = '⚠ 上傳失敗 (HTTP 404)：請檢查 Worker 網址或部署狀態';
+          }
+          toast(msg, 'er');
+          isCloudBook = false;
+          shareUrl = '';
+        }
+      } else {
+        // Local-only mode
+        isCloudBook = false;
+        shareUrl = '';
+        fill.style.width = '100%';
+        label.textContent = '完成（本地模式）';
+      }
+
+      // ── Step 4: Save to session (with Quota Protection) ──
+      try {
+        const sessionData = {
+          n: bookName,
+          id: bookId,
+          cloud: isCloudBook,
+        };
+
+        // 如果是雲端書籍，我們不需要在 session 中儲存龐大的 Data URL (頁面圖片)
+        // 這樣可以避免 QuotaExceededError，且重新整理時會自動透過 loadCloudBook 重新抓取
+        if (!isCloudBook) {
+          sessionData.p = pages;
+          sessionData.t = thumbs;
+        }
+
+        sessionStorage.setItem('flipcloud_book', JSON.stringify(sessionData));
+      } catch (e) {
+        console.warn('Session storage quota exceeded:', e);
+        if (!isCloudBook) {
+          toast('⚠ 本地儲存空間不足，重新整理後資料將會遺失', 'er');
+        }
+      }
+
+      if (bookId) window.location.hash = 'book:session';
+      await new Promise(r => setTimeout(r, 500));
+      initApp();
+    }
+
+    /* ══════════════════════════════════════════
+       LOAD CLOUD BOOK BY ID
+    ══════════════════════════════════════════ */
+    async function loadCloudBook(id) {
+      if (!CONFIG.WORKER_URL) {
+        toast('⚠ 尚未設定 Worker 網址');
+        show('upload-screen');
+        return;
+      }
+
+      show('progress-screen');
+      hide('upload-screen');
+      setStep('convert', 'done');
+      setStep('upload', 'done');
+      setStep('link', 'active');
+      document.getElementById('prog-label').textContent = '載入書籍中…';
+      document.getElementById('prog-fill').style.width = '60%';
+
+      try {
+        // Include book token if we have one (password protected books)
+        const headers = {};
+        const savedToken = sessionStorage.getItem(`fc_tok_${id}`);
+        if (savedToken) { headers['X-Book-Token'] = savedToken; bookToken = savedToken; }
+
+        const res = await fetch(`${CONFIG.WORKER_URL}/api/book/${id}`, { headers });
+        const data = await res.json();
+
+        // Unavailable
+        if (data.unavailable) {
+          hide('progress-screen');
+          showUnavailable(data);
+          return;
+        }
+
+        // Password required
+        if (data.passwordRequired) {
+          hide('progress-screen');
+          showPasswordWall(id, data.title);
+          return;
+        }
+
+        if (!res.ok) throw new Error('Not found');
+
+        bookName = data.title;
+        bookId = data.id;
+        shareUrl = `${location.origin}/?book=${data.id}`;
+        isCloudBook = true;
+
+        pages = data.pageUrls;
+        thumbs = data.pageUrls;
+        setStep('link', 'done');
+        document.getElementById('prog-fill').style.width = '100%';
+
+        saveRecent({ id: data.id, title: data.title, pageCount: data.pageCount });
+        await new Promise(r => setTimeout(r, 400));
+
+        // Start read-time tracking
+        startReadTimer(data.id);
+        initApp();
+
+      } catch (e) {
+        toast('⚠ 找不到書籍，請確認 ID 是否正確');
+        show('upload-screen');
+        hide('progress-screen');
+      }
+    }
+
+    function openByID() {
+      const id = document.getElementById('book-id-input').value.trim();
+      if (!id) return;
+      loadCloudBook(id);
+    }
+
+    /* ══════════════════════════════════════════
+       RECENT BOOKS (localStorage)
+    ══════════════════════════════════════════ */
+    function saveRecent(book) {
+      try {
+        const raw = localStorage.getItem('flipcloud_recent');
+        const list = raw ? JSON.parse(raw) : [];
+        const filtered = list.filter(b => b.id !== book.id);
+        filtered.unshift({ ...book, openedAt: Date.now() });
+        localStorage.setItem('flipcloud_recent', JSON.stringify(filtered.slice(0, 6)));
+      } catch (e) { }
+    }
+
+    function loadRecentBooks() {
+      try {
+        const raw = localStorage.getItem('flipcloud_recent');
+        if (!raw) return;
+        const list = JSON.parse(raw);
+        if (!list.length) return;
+
+        const wrap = document.getElementById('recent-books-wrap');
+        const listEl = document.getElementById('recent-list');
+        wrap.style.display = 'block';
+        listEl.innerHTML = '';
+
+        list.forEach(b => {
+          const d = document.createElement('div');
+          d.className = 'rb-item';
+          d.innerHTML = `<span class="rb-name">${escHtml(b.title)}</span>
+        <span class="rb-meta">${b.pageCount}頁 · ${b.id}</span>`;
+          d.onclick = () => loadCloudBook(b.id);
+          listEl.appendChild(d);
+        });
+      } catch (e) { }
+    }
+
+    function checkMobile() {
+      isMobileView = window.innerWidth <= 768;
+      document.body.classList.toggle('is-mobile', isMobileView);
+      return isMobileView;
+    }
+
+    /* ══════════════════════════════════════════
+       INIT APP
+    ══════════════════════════════════════════ */
+    function initApp() {
+      checkMobile();
+      if (isMobileView) {
+        totalSpreads = pages.length + 1; // 封面 + 所有頁面
+        // 手機版預設收起側邊欄
+        sidebarOpen = false;
+        document.getElementById('sidebar').classList.add('collapsed');
+        document.getElementById('btn-sidebar').classList.remove('active');
+      } else {
+        totalSpreads = 1 + Math.ceil(pages.length / 2);
+      }
+      currentSpread = 0;
+      qrGenerated = false;
+
+      document.getElementById('tb-title').textContent = bookName;
+
+      const cloudBadge = document.getElementById('tb-cloud');
+      cloudBadge.style.display = isCloudBook ? '' : 'none';
+
+      // Share bar
+      if (shareUrl) {
+        const bar = document.getElementById('share-bar');
+        bar.classList.add('visible');
+        document.getElementById('share-url-text').textContent = shareUrl;
+        document.getElementById('qr-url-display').textContent = shareUrl;
+        document.getElementById('sep-share').style.display = '';
+      }
+
+      buildThumbs();
+      buildTOC();
+      renderSpread(0);
+
+      // Check reading progress
+      if (bookId) {
+        const saved = loadProgress(bookId);
+        if (saved && saved > 0 && saved < totalSpreads - 1) {
+          showResumeDialog(saved);
+        }
+      }
+
+      show('app');
+      hide('progress-screen');
+      hide('upload-screen');
+    }
+
+    /* ══════════════════════════════════════════
+       PROGRESS STEPS
+    ══════════════════════════════════════════ */
+    function setStep(step, state) {
+      const el = document.getElementById(`step-${step}`);
+      el.classList.remove('active', 'done');
+      if (state) el.classList.add(state);
+    }
+
+    /* ══════════════════════════════════════════
+       THUMBNAILS & TOC
+    ══════════════════════════════════════════ */
+    function buildThumbs() {
+      const grid = document.getElementById('thumb-grid');
+      grid.innerHTML = '';
+
+      // Cover
+      const coverItem = mkThumb(0, 'Cover');
+      const cv = document.createElement('canvas');
+      cv.width = 120; cv.height = 160;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#3d2204'; ctx.fillRect(0, 0, 120, 160);
+      ctx.fillStyle = '#c8a96e'; ctx.font = 'bold 9px serif'; ctx.textAlign = 'center';
+      bookName.split(' ').slice(0, 3).forEach((w, i) => ctx.fillText(w.slice(0, 12), 60, 60 + i * 14));
+      coverItem.insertBefore(cv, coverItem.querySelector('.thumb-num'));
+      grid.appendChild(coverItem);
+
+      thumbs.forEach((src, i) => {
+        const item = mkThumb(1 + Math.floor(i / 2), i + 1);
+        const el = isCloudBook ? (() => {
+          const img = document.createElement('img');
+          img.src = src; img.loading = 'lazy';
+          return img;
+        })() : (() => {
+          const img = document.createElement('img');
+          img.src = src;
+          return img;
+        })();
+        item.insertBefore(el, item.querySelector('.thumb-num'));
+        grid.appendChild(item);
+      });
+    }
+
+    function mkThumb(spreadIdx, label) {
+      const d = document.createElement('div');
+      d.className = 'thumb-item'; d.dataset.spread = spreadIdx;
+      const n = document.createElement('span');
+      n.className = 'thumb-num'; n.textContent = label;
+      d.appendChild(n);
+      d.addEventListener('click', () => goToSpread(parseInt(d.dataset.spread)));
+      return d;
+    }
+
+    function buildTOC() {
+      const list = document.getElementById('toc-list');
+      list.innerHTML = '';
+      addTocItem(list, 0, '封面', '—');
+      for (let s = 1; s < totalSpreads; s++) {
+        const lp = s * 2 - 1, rp = s * 2;
+        addTocItem(list, s, rp <= pages.length ? `第 ${lp}–${rp} 頁` : `第 ${lp} 頁`, lp);
+      }
+    }
+
+    function addTocItem(container, spreadIdx, label, pageNum) {
+      const d = document.createElement('div');
+      d.className = 'toc-item'; d.dataset.spread = spreadIdx;
+      d.innerHTML = `<span class="toc-page">${pageNum}</span><span class="toc-label">${label}</span>`;
+      d.addEventListener('click', () => goToSpread(spreadIdx));
+      container.appendChild(d);
+    }
+
+    function updateSidebarHighlight() {
+      document.querySelectorAll('.thumb-item').forEach(el =>
+        el.classList.toggle('current', parseInt(el.dataset.spread) === currentSpread));
+      document.querySelectorAll('.toc-item').forEach(el =>
+        el.classList.toggle('current', parseInt(el.dataset.spread) === currentSpread));
+      const active = document.querySelector('.thumb-item.current, .toc-item.current');
+      if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ══════════════════════════════════════════
+       RENDER SPREAD
+    ══════════════════════════════════════════ */
+    function renderSpread(spreadIndex) {
+      const lEl = document.getElementById('page-l');
+      const rEl = document.getElementById('page-r');
+
+      lEl.innerHTML = '<div class="page-shadow-l"></div><div class="page-curl" onclick="turnPage(-1)"></div>';
+      rEl.innerHTML = '<div class="page-shadow-r"></div><div class="page-curl" onclick="turnPage(1)"></div>';
+
+      if (isMobileView) {
+        // ── 手機單頁模式 ──
+        if (spreadIndex === 0) {
+          const cov = document.createElement('div');
+          cov.className = 'cover-inner';
+          cov.innerHTML = `<div class="cov-orn">❧</div>
+          <div class="cov-title">${escHtml(bookName)}</div>
+          <div class="cov-rule"></div>
+          <div class="cov-pages">${pages.length} PAGES</div>`;
+          rEl.insertBefore(cov, rEl.firstChild);
+        } else {
+          renderImgInto(rEl, spreadIndex - 1, spreadIndex);
+        }
+      } else {
+        // ── 電腦雙頁模式 ──
+        if (spreadIndex === 0) {
+          const cov = document.createElement('div');
+          cov.className = 'cover-inner';
+          cov.innerHTML = `<div class="cov-orn">❧</div>
+        <div class="cov-title">${escHtml(bookName)}</div>
+        <div class="cov-rule"></div>
+        <div class="cov-pages">${pages.length} PAGES</div>`;
+          lEl.insertBefore(cov, lEl.firstChild);
+          renderImgInto(rEl, 0, 1);
+        } else {
+          const li = spreadIndex * 2 - 1, ri = spreadIndex * 2;
+          renderImgInto(lEl, li, li + 1);
+          renderImgInto(rEl, ri, ri + 1);
+        }
+      }
+
+      updateControls();
+      updateSidebarHighlight();
+    }
+
+    function renderImgInto(el, pageIdx, dispNum) {
+      if (pageIdx < 0 || pageIdx >= pages.length) {
+        el.insertBefore(Object.assign(document.createElement('div'), { className: 'blank-pg' }), el.firstChild);
+        return;
+      }
+      const img = document.createElement('img');
+      img.src = pages[pageIdx];
+      img.loading = 'lazy';
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#faf6ef;display:block;cursor:zoom-in';
+      img.addEventListener('click', () => openZoomPage(pageIdx));
+      el.insertBefore(img, el.firstChild);
+      const num = document.createElement('span');
+      num.className = 'page-num'; num.textContent = dispNum;
+      el.appendChild(num);
+    }
+
+    /* ══════════════════════════════════════════
+       FLIP
+    ══════════════════════════════════════════ */
+    const FLIP_MS = 550; // 與 --transition 同步
+
+    function turnPage(dir) {
+      if (isFlipping) return;
+      const next = currentSpread + dir;
+      if (next < 0 || next >= totalSpreads) return;
+      playFlipSound();
+      isFlipping = true;
+
+      const fp = document.getElementById('flip-page');
+      const face = document.getElementById('flip-face');
+      const back = document.getElementById('flip-back');
+      face.innerHTML = ''; back.innerHTML = '';
+
+      // 預先移除 transition，確保起始狀態立即生效
+      fp.style.transition = 'none';
+
+      if (dir > 0) {
+        // ── 向右翻（下一頁）──
+        fp.style.cssText = 'left:0;transform-origin:right center;transform:rotateY(0deg);display:block;will-change:transform';
+        buildFlipImg(face, currentSpread, 'left');
+        buildFlipImg(back, next, 'left');
+        // 強制瀏覽器重新計算後再啟動動畫
+        void fp.offsetWidth;
+        fp.style.transition = 'transform var(--transition)';
+        fp.style.transform = 'rotateY(-180deg)';
+      } else {
+        // ── 向左翻（上一頁）──
+        fp.style.cssText = 'left:50%;transform-origin:left center;transform:rotateY(-180deg);display:block;will-change:transform';
+        buildFlipImg(face, currentSpread, 'right');
+        buildFlipImg(back, next, 'right');
+        void fp.offsetWidth;
+        fp.style.transition = 'transform var(--transition)';
+        fp.style.transform = 'rotateY(0deg)';
+      }
+
+      setTimeout(() => {
+        fp.style.transition = 'none';
+        fp.style.display = 'none';
+        fp.classList.remove('go');
+        currentSpread = next;
+        renderSpread(currentSpread);
+        if (bookId) saveProgress(bookId, currentSpread);
+        isFlipping = false;
+      }, FLIP_MS + 20);
+    }
+
+    function buildFlipImg(container, spreadIdx, side) {
+      const W = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--page-w')) || 400;
+      const H = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--page-h')) || 533;
+
+      let pi = -1;
+      if (spreadIdx === 0) {
+        if (side === 'right') pi = 0;
+      } else {
+        pi = side === 'left' ? spreadIdx * 2 - 1 : spreadIdx * 2;
+      }
+
+      if (isMobileView) {
+        // 手機版翻頁圖片邏輯
+        if (spreadIdx === 0) {
+          const cov = document.createElement('div');
+          cov.className = 'cover-inner';
+          cov.style.transform = 'scale(0.9)'; // 稍微縮小以適應翻頁面
+          cov.innerHTML = `<div class="cov-orn">❧</div>
+          <div class="cov-title">${escHtml(bookName)}</div>
+          <div class="cov-rule"></div>
+          <div class="cov-pages">${pages.length} PAGES</div>`;
+          container.appendChild(cov);
+        } else {
+          const pi = spreadIdx - 1;
+          if (pi >= 0 && pi < pages.length) {
+            const img = document.createElement('img');
+            img.src = pages[pi];
+            img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;background:#faf6ef';
+            container.appendChild(img);
+          }
+        }
+        return;
+      }
+
+      if (spreadIdx === 0 && side === 'left') {
+        // Draw cover canvas
+        const cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        cv.style.cssText = 'width:100%;height:100%;display:block';
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#3d2204'; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#c8a96e';
+        ctx.font = `bold ${Math.floor(W * 0.07)}px serif`;
+        ctx.textAlign = 'center';
+        bookName.split(' ').slice(0, 3).forEach((w, i) =>
+          ctx.fillText(w.slice(0, 14), W / 2, H / 2 - 10 + i * (W * 0.09)));
+        container.appendChild(cv);
+        return;
+      }
+
+      if (pi >= 0 && pi < pages.length) {
+        const img = document.createElement('img');
+        img.src = pages[pi];
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;background:#faf6ef';
+        container.appendChild(img);
+      } else {
+        const d = document.createElement('div');
+        d.style.cssText = `width:${W}px;height:${H}px;background:#faf6ef`;
+        container.appendChild(d);
+      }
+    }
+
+    function goToSpread(s) {
+      if (isFlipping) return;
+      const t = Math.max(0, Math.min(totalSpreads - 1, s));
+      if (t === currentSpread) return;
+      playFlipSound();
+      currentSpread = t;
+      renderSpread(currentSpread);
+      // Save reading progress
+      if (bookId) saveProgress(bookId, currentSpread);
+    }
+
+    /* ══════════════════════════════════════════
+       CONTROLS
+    ══════════════════════════════════════════ */
+    function updateControls() {
+      const at0 = currentSpread <= 0;
+      const atEnd = currentSpread >= totalSpreads - 1;
+      document.getElementById('ctrl-first').disabled = at0;
+      document.getElementById('ctrl-prev').disabled = at0;
+      document.getElementById('ctrl-next').disabled = atEnd;
+      document.getElementById('ctrl-last').disabled = atEnd;
+
+      const lp = isMobileView 
+        ? (currentSpread === 0 ? '封面' : currentSpread)
+        : (currentSpread === 0 ? '封面' : currentSpread * 2 - 1);
+      const rp = isMobileView
+        ? (currentSpread === 0 ? '封面' : currentSpread)
+        : (currentSpread === 0 ? 1 : currentSpread * 2);
+      
+      if (isMobileView) {
+        document.getElementById('page-chip').textContent = `第 ${currentSpread === 0 ? '0' : currentSpread} / ${pages.length} 頁`;
+      } else {
+        document.getElementById('page-chip').textContent = `${lp} — ${rp > pages.length ? '末頁' : rp}`;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       SIDEBAR / TABS
+    ══════════════════════════════════════════ */
+    function toggleSidebar() {
+      sidebarOpen = !sidebarOpen;
+      document.getElementById('sidebar').classList.toggle('collapsed', !sidebarOpen);
+      document.getElementById('btn-sidebar').classList.toggle('active', sidebarOpen);
+      // 手機版：展開則顯示遠罩
+      if (isMobileView) {
+        document.getElementById('sidebar-overlay').classList.toggle('show', sidebarOpen);
+      }
+    }
+
+    function closeSidebarMobile() {
+      sidebarOpen = false;
+      document.getElementById('sidebar').classList.add('collapsed');
+      document.getElementById('btn-sidebar').classList.remove('active');
+      document.getElementById('sidebar-overlay').classList.remove('show');
+    }
+
+    function switchTab(tab) {
+      document.getElementById('stab-thumb').classList.toggle('active', tab === 'thumb');
+      document.getElementById('stab-toc').classList.toggle('active', tab === 'toc');
+      document.getElementById('pane-thumb').classList.toggle('active', tab === 'thumb');
+      document.getElementById('pane-toc').classList.toggle('active', tab === 'toc');
+    }
+
+    /* ══════════════════════════════════════════
+       ZOOM
+    ══════════════════════════════════════════ */
+    function openZoomPage(pi) {
+      if (pi < 0 || pi >= pages.length) return;
+      zoomLevel = 1;
+      const img = document.getElementById('zoom-img');
+      img.src = pages[pi]; img.style.transform = 'scale(1)';
+      document.getElementById('zoom-overlay').classList.add('open');
+    }
+
+    function zoomCurrent() {
+      const pi = currentSpread === 0 ? 0 : currentSpread * 2 - 1;
+      openZoomPage(pi);
+    }
+
+    function closeZoom() { document.getElementById('zoom-overlay').classList.remove('open'); }
+    function zoomIn() { zoomLevel = Math.min(zoomLevel + .3, 3); document.getElementById('zoom-img').style.transform = `scale(${zoomLevel})`; }
+    function zoomOut() { zoomLevel = Math.max(zoomLevel - .3, .5); document.getElementById('zoom-img').style.transform = `scale(${zoomLevel})`; }
+    function zoomReset() { zoomLevel = 1; document.getElementById('zoom-img').style.transform = 'scale(1)'; }
+
+    /* ══════════════════════════════════════════
+       QR CODE
+    ══════════════════════════════════════════ */
+    function openQR() {
+      if (!shareUrl) { toast('⚠ 無分享連結（本地模式）'); return; }
+      if (!qrGenerated) {
+        document.getElementById('qr-canvas-wrap').innerHTML = '';
+        new QRCode(document.getElementById('qr-canvas-wrap'), {
+          text: shareUrl, width: 180, height: 180,
+          colorDark: '#1a1208', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+        qrGenerated = true;
+      }
+      document.getElementById('qr-panel').classList.add('open');
+    }
+
+    function closeQR() { document.getElementById('qr-panel').classList.remove('open'); }
+
+    /* ══════════════════════════════════════════
+       SHARE
+    ══════════════════════════════════════════ */
+    function copyShareUrl() {
+      if (!shareUrl) { toast('⚠ 本地模式無分享連結'); return; }
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast('✓ 連結已複製');
+        const btn = document.getElementById('share-copy-btn');
+        btn.textContent = '已複製 ✓'; btn.classList.add('done');
+        setTimeout(() => { btn.textContent = '複製'; btn.classList.remove('done'); }, 2000);
+      });
+    }
+
+    /* ══════════════════════════════════════════
+       PAGE JUMP
+    ══════════════════════════════════════════ */
+    function openJump() { document.getElementById('jump-dialog').classList.add('open'); document.getElementById('jump-input').value = ''; document.getElementById('jump-input').focus(); }
+    function closeJump() { document.getElementById('jump-dialog').classList.remove('open'); }
+    function doJump() {
+      const v = parseInt(document.getElementById('jump-input').value);
+      if (!isNaN(v)) goToSpread(Math.ceil(Math.max(1, Math.min(v, pages.length)) / 2));
+      closeJump();
+    }
+
+    /* ══════════════════════════════════════════
+       AUDIO
+    ══════════════════════════════════════════ */
+    let audioCtx = null;
+
+    function playFlipSound() {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * .12, audioCtx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) {
+          const t = i / audioCtx.sampleRate;
+          d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 40) * .25
+            + Math.sin(2 * Math.PI * 800 * t) * Math.exp(-t * 60) * .08;
+        }
+        const src = audioCtx.createBufferSource();
+        const f = audioCtx.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = .8;
+        src.buffer = buf; src.connect(f); f.connect(audioCtx.destination); src.start();
+        const wave = document.getElementById('sound-wave');
+        wave.classList.add('playing');
+        setTimeout(() => wave.classList.remove('playing'), 300);
+      } catch (e) { }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('btn-sound').classList.toggle('active', soundEnabled);
+      document.getElementById('sound-icon').innerHTML = soundEnabled
+        ? '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>'
+        : '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3z"/>';
+      toast(soundEnabled ? '🔊 音效開啟' : '🔇 音效關閉');
+    }
+
+    /* ══════════════════════════════════════════
+       KEYBOARD + TOUCH
+    ══════════════════════════════════════════ */
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); turnPage(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); turnPage(-1); }
+      if (e.key === 'Home') goToSpread(0);
+      if (e.key === 'End') goToSpread(999);
+      if (e.key === 'g' || e.key === 'G') openJump();
+      if (e.key === 'Escape') { closeZoom(); closeQR(); closeJump(); }
+    });
+
+    let txStart = 0;
+    document.getElementById('book-wrap')?.addEventListener('touchstart', e => txStart = e.touches[0].clientX);
+    document.getElementById('book-wrap')?.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - txStart;
+      if (Math.abs(dx) > 50) turnPage(dx < 0 ? 1 : -1);
+    });
+
+    /* ══════════════════════════════════════════
+       UNAVAILABLE SCREEN
+    ══════════════════════════════════════════ */
+    function showUnavailable(data) {
+      const icons = { unpublished: '🔒', scheduled: '⏰', expired: '📕', default: '❓' };
+      const titles = { unpublished: '尚未開放', scheduled: '尚未到開放時間', expired: '已下架', default: '無法開啟' };
+      const subs = {
+        unpublished: '此書籍目前尚未公開上架。',
+        scheduled: '此書籍尚未到達開放時間。',
+        expired: '此書籍已結束公開閱讀期間。',
+        default: '此書籍目前無法開啟。',
+      };
+      const reason = data?.reason || 'default';
+      document.getElementById('uv-icon').textContent = icons[reason] || icons.default;
+      document.getElementById('uv-title').textContent = titles[reason] || titles.default;
+      document.getElementById('uv-sub').textContent = subs[reason] || subs.default;
+
+      const timeEl = document.getElementById('uv-time');
+      if (reason === 'scheduled' && data?.publishAt) {
+        timeEl.textContent = `預定開放：${new Date(data.publishAt).toLocaleString('zh-TW')}`;
+        timeEl.style.display = '';
+      } else {
+        timeEl.style.display = 'none';
+      }
+
+      const uvEl = document.getElementById('unavail-screen');
+      uvEl.style.display = 'flex';
+      hide('upload-screen');
+      hide('progress-screen');
+      hide('app');
+    }
+
+    /* ══════════════════════════════════════════
+       READING PROGRESS
+    ══════════════════════════════════════════ */
+    let resumeSpread = 0;
+
+    function saveProgress(id, spread) {
+      try { localStorage.setItem(`fc_prog_${id}`, spread); } catch (e) { }
+    }
+
+    function loadProgress(id) {
+      try { return parseInt(localStorage.getItem(`fc_prog_${id}`)) || 0; } catch (e) { return 0; }
+    }
+
+    function showResumeDialog(spread) {
+      resumeSpread = spread;
+      const page = spread === 0 ? '封面' : `第 ${spread * 2 - 1} 頁`;
+      document.getElementById('rd-page').textContent = page;
+      const d = document.getElementById('resume-dialog');
+      d.style.display = 'flex';
+      requestAnimationFrame(() => d.classList.add('show'));
+    }
+
+    function resumeReading() {
+      dismissResume();
+      setTimeout(() => goToSpread(resumeSpread), 100);
+    }
+
+    function dismissResume() {
+      const d = document.getElementById('resume-dialog');
+      d.classList.remove('show');
+      setTimeout(() => d.style.display = 'none', 350);
+    }
+
+    /* ══════════════════════════════════════════
+       PASSWORD WALL
+    ══════════════════════════════════════════ */
+    function showPasswordWall(bookId, title) {
+      const el = document.getElementById('unavail-screen');
+      el.innerHTML = `
+    <div class="uv-icon">🔑</div>
+    <div class="uv-title" style="font-size:1.5rem">${escHtml(title)}</div>
+    <div class="uv-sub">此書籍需要密碼才能閱讀</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="pw-input" type="password" placeholder="輸入密碼"
+        style="background:#ffffff0a;border:1px solid #c8a96e44;border-radius:10px;padding:11px 16px;color:#f5f0e8;font-family:DM Mono,monospace;font-size:.9rem;outline:none;width:200px"
+        onkeydown="if(event.key==='Enter')submitPassword('${bookId}')">
+      <button onclick="submitPassword('${bookId}')"
+        style="background:linear-gradient(135deg,#c8a96e,#a07840);color:#1a1208;border:none;border-radius:10px;padding:11px 20px;font-family:Noto Serif TC,serif;font-size:.86rem;font-weight:700;cursor:pointer">
+        確認
+      </button>
+    </div>
+    <div id="pw-err" style="font-family:DM Mono,monospace;font-size:.72rem;color:#e74c3c;display:none;margin-top:8px">密碼錯誤，請重試</div>
+    <a class="uv-back" href="bookshelf.html">← 返回書架</a>`;
+      el.style.display = 'flex';
+      setTimeout(() => document.getElementById('pw-input')?.focus(), 100);
+    }
+
+    async function submitPassword(id) {
+      const pw = document.getElementById('pw-input')?.value;
+      if (!pw) return;
+      try {
+        const res = await fetch(`${CONFIG.WORKER_URL}/api/book/${id}/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          document.getElementById('pw-err').style.display = '';
+          document.getElementById('pw-input').value = '';
+          return;
+        }
+        bookToken = data.token;
+        sessionStorage.setItem(`fc_tok_${id}`, bookToken);
+        document.getElementById('unavail-screen').style.display = 'none';
+        loadCloudBook(id);
+      } catch (e) {
+        document.getElementById('pw-err').style.display = '';
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       READ TIME TRACKING
+    ══════════════════════════════════════════ */
+    let _readTimer = null;
+    let _readBookId = '';
+    let _readSeconds = 0;
+
+    function startReadTimer(id) {
+      _readBookId = id;
+      _readSeconds = 0;
+      readStartTime = Date.now();
+      _readTimer = setInterval(() => {
+        _readSeconds++;
+        // Flush every 30s
+        if (_readSeconds % 30 === 0) flushReadTime();
+      }, 1000);
+      // Also flush on page hide/unload
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) flushReadTime();
+        else readStartTime = Date.now();
+      });
+      window.addEventListener('beforeunload', flushReadTime);
+    }
+
+    function flushReadTime() {
+      if (!_readBookId || _readSeconds <= 0 || !CONFIG.WORKER_URL) return;
+      const secs = _readSeconds;
+      _readSeconds = 0;
+      navigator.sendBeacon?.(
+        `${CONFIG.WORKER_URL}/api/book/${_readBookId}/stat`,
+        new Blob([JSON.stringify({ seconds: secs })], { type: 'application/json' })
+      );
+    }
+
+    /* ══════════════════════════════════════════
+       EMBED CODE
+    ══════════════════════════════════════════ */
+    function showEmbedCode() {
+      if (!shareUrl && !bookId) { toast('⚠ 需先上架書籍才能嵌入'); return; }
+      const src = bookId
+        ? `${location.origin}/?book=${bookId}&embed=1`
+        : `${location.origin}/?book=BOOK_ID&embed=1`;
+      const code = `<iframe src="${src}" width="860" height="640" frameborder="0" allowfullscreen style="border-radius:12px;overflow:hidden"></iframe>`;
+
+      // Show in zoom overlay area
+      const overlay = document.getElementById('zoom-overlay');
+      overlay.innerHTML = `
+    <div onclick="event.stopPropagation()" style="background:#1e1a10;border:1px solid #c8a96e33;border-radius:20px;padding:32px 36px;width:580px;max-width:92vw">
+      <div style="font-family:Playfair Display,serif;font-style:italic;font-size:1.2rem;color:#c8a96e;margin-bottom:18px">嵌入代碼</div>
+      <textarea readonly onclick="this.select()"
+        style="width:100%;background:#ffffff08;border:1px solid #ffffff14;border-radius:10px;padding:12px;color:#f5f0e8;font-family:DM Mono,monospace;font-size:.72rem;resize:none;height:90px;outline:none;line-height:1.5">${code}</textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="navigator.clipboard.writeText(\`${code.replace(/`/g, '\\`')}\`).then(()=>showToastMsg('✓ 已複製嵌入代碼'))"
+          style="flex:1;padding:10px;background:linear-gradient(135deg,#c8a96e,#a07840);color:#1a1208;border:none;border-radius:9px;font-family:DM Mono,monospace;font-size:.76rem;cursor:pointer">
+          複製代碼
+        </button>
+        <button onclick="closeEmbedPanel()"
+          style="padding:10px 18px;background:#ffffff0a;border:1px solid #ffffff14;color:#ffffff55;border-radius:9px;font-family:DM Mono,monospace;font-size:.76rem;cursor:pointer">
+          關閉
+        </button>
+      </div>
+      <div style="font-family:DM Mono,monospace;font-size:.67rem;color:#ffffff22;margin-top:10px;line-height:1.6">
+        寬度 860px × 高度 640px · 可自行調整尺寸<br>embed=1 模式：隱藏頁頭，僅顯示翻頁書
+      </div>
+    </div>`;
+      overlay.classList.add('open');
+      overlay.onclick = closeEmbedPanel;
+    }
+
+    function closeEmbedPanel() {
+      const overlay = document.getElementById('zoom-overlay');
+      overlay.classList.remove('open');
+      // Restore original zoom overlay content
+      overlay.innerHTML = `<img id="zoom-img" src="" alt="" onclick="event.stopPropagation()">
+    <div class="zoom-toolbar" onclick="event.stopPropagation()">
+      <button class="z-btn" onclick="zoomIn()">＋</button>
+      <button class="z-btn" onclick="zoomReset()">⊙</button>
+      <button class="z-btn" onclick="zoomOut()">－</button>
+      <button class="z-btn" onclick="closeZoom()">✕</button>
+    </div>`;
+    }
+
+    function showToastMsg(m) { toast(m); }
+
+    /* ══════════════════════════════════════════
+       RESET + UTILS
+    ══════════════════════════════════════════ */
+    function resetApp() {
+      pages = []; thumbs = []; bookId = ''; shareUrl = ''; qrGenerated = false;
+      window.location.hash = '';
+      history.replaceState({}, '', location.pathname);
+      document.getElementById('share-bar').classList.remove('visible');
+      document.getElementById('sep-share').style.display = 'none';
+      hide('app'); show('upload-screen');
+      document.getElementById('pdf-input').value = '';
+      loadRecentBooks();
+    }
+
+    function show(id) {
+      const el = document.getElementById(id);
+      el.style.display = (id === 'app' || id === 'progress-screen') ? 'flex' : '';
+    }
+
+    function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      clearTimeout(t._t);
+      t._t = setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+
+</html>
