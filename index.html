@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlipCloud · 雲端翻頁書</title>
+  <title>鑫囍探索旅遊手冊</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -745,7 +745,10 @@
       z-index: 40;
       backdrop-filter: blur(1px);
     }
-    #sidebar-overlay.show { display: block; }
+
+    #sidebar-overlay.show {
+      display: block;
+    }
 
     .sidebar-tabs {
       display: flex;
@@ -1107,7 +1110,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to left, rgba(0,0,0,0.18) 0%, transparent 60%);
+      background: linear-gradient(to left, rgba(0, 0, 0, 0.18) 0%, transparent 60%);
       pointer-events: none;
       z-index: 5;
     }
@@ -1116,7 +1119,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to right, rgba(0,0,0,0.14) 0%, transparent 50%);
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.14) 0%, transparent 50%);
       pointer-events: none;
       z-index: 5;
     }
@@ -1544,13 +1547,18 @@
       .is-mobile .book-wrap {
         width: var(--page-w);
       }
-      .is-mobile .page-l, .is-mobile .page-shadow-l, .is-mobile .b-spine {
+
+      .is-mobile .page-l,
+      .is-mobile .page-shadow-l,
+      .is-mobile .b-spine {
         display: none !important;
       }
+
       .is-mobile .page-r {
         border-radius: 8px;
         box-shadow: 0 10px 30px #00000044;
       }
+
       .is-mobile .flip-page {
         width: var(--page-w);
         left: 0 !important;
@@ -1597,25 +1605,9 @@
       </div>
 
       <div class="mode-tabs">
-        <button class="mode-tab active" id="tab-upload" onclick="switchMode('upload')">上傳 PDF</button>
         <button class="mode-tab" id="tab-open" onclick="switchMode('open')">開啟書籍</button>
       </div>
 
-      <!-- Upload PDF pane -->
-      <div class="upload-pane active" id="pane-upload">
-        <div class="drop-card" id="drop-card">
-          <input type="file" id="pdf-input" accept=".pdf">
-          <div class="drop-icon">📖</div>
-          <div class="drop-title">上傳 PDF，轉成翻頁書</div>
-          <div class="drop-hint">拖曳至此，或 <strong>點擊選擇</strong><br>最多 50 頁 · 自動儲存雲端</div>
-        </div>
-        <button class="upload-cta" onclick="document.getElementById('pdf-input').click()">
-          <svg viewBox="0 0 24 24" width="16" fill="currentColor">
-            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
-          </svg>
-          選擇 PDF 檔案
-        </button>
-      </div>
 
       <!-- Open by ID pane -->
       <div class="upload-pane" id="pane-open">
@@ -1638,19 +1630,13 @@
     <div class="prog-card">
       <div class="prog-steps">
         <div class="prog-step active" id="step-convert">
-          <div class="step-dot"></div><span>轉換 PDF 頁面</span>
-        </div>
-        <div class="prog-step" id="step-upload">
-          <div class="step-dot"></div><span>上傳至雲端</span>
-        </div>
-        <div class="prog-step" id="step-link">
-          <div class="step-dot"></div><span>生成短連結</span>
+          <div class="step-dot"></div><span>載入中</span>
         </div>
       </div>
       <div class="prog-bg">
         <div class="prog-fill" id="prog-fill"></div>
       </div>
-      <div class="prog-label" id="prog-label">準備中…</div>
+      <div class="prog-label" id="prog-label">載入中…</div>
     </div>
   </div>
 
@@ -1658,7 +1644,8 @@
   <div id="app">
     <!-- Topbar -->
     <div id="topbar">
-      <div class="tb-logo">FlipCloud</div>
+      <div class="tb-logo"><img src="logo.svg" alt="鑫囍探索旅遊手冊" style="height:28px;vertical-align:middle;display:block;">
+      </div>
       <div class="tb-sep"></div>
       <div class="tb-book-title" id="tb-title">—</div>
       <span class="tb-cloud" id="tb-cloud" style="display:none">☁ 雲端</span>
@@ -1827,6 +1814,11 @@
     /* ══════════════════════════════════════════
        !! CONFIG — 修改這裡 !!
     ══════════════════════════════════════════ */
+    /* 強制分享連結使用 https */
+    function httpsOrigin() {
+      return location.origin.replace(/^http:/, 'https:');
+    }
+
     const CONFIG = {
       // 你的 Cloudflare Worker 網址，例如：
       // 'https://flipcloud-api.yourname.workers.dev'
@@ -1893,7 +1885,7 @@
             }
             bookName = d.n; pages = d.p; thumbs = d.t || [];
             bookId = d.id || ''; isCloudBook = d.cloud || false;
-            shareUrl = bookId ? `${location.origin}/?book=${bookId}` : '';
+            shareUrl = bookId ? `${httpsOrigin()}/?book=${bookId}` : '';
             initApp();
             return;
           } catch (e) {
@@ -2108,7 +2100,7 @@
 
         bookName = data.title;
         bookId = data.id;
-        shareUrl = `${location.origin}/?book=${data.id}`;
+        shareUrl = `${httpsOrigin()}/?book=${data.id}`;
         isCloudBook = true;
 
         pages = data.pageUrls;
@@ -2501,13 +2493,13 @@
       document.getElementById('ctrl-next').disabled = atEnd;
       document.getElementById('ctrl-last').disabled = atEnd;
 
-      const lp = isMobileView 
+      const lp = isMobileView
         ? (currentSpread === 0 ? '封面' : currentSpread)
         : (currentSpread === 0 ? '封面' : currentSpread * 2 - 1);
       const rp = isMobileView
         ? (currentSpread === 0 ? '封面' : currentSpread)
         : (currentSpread === 0 ? 1 : currentSpread * 2);
-      
+
       if (isMobileView) {
         document.getElementById('page-chip').textContent = `第 ${currentSpread === 0 ? '0' : currentSpread} / ${pages.length} 頁`;
       } else {
@@ -2814,8 +2806,8 @@
     function showEmbedCode() {
       if (!shareUrl && !bookId) { toast('⚠ 需先上架書籍才能嵌入'); return; }
       const src = bookId
-        ? `${location.origin}/?book=${bookId}&embed=1`
-        : `${location.origin}/?book=BOOK_ID&embed=1`;
+        ? `${httpsOrigin()}/?book=${bookId}&embed=1`
+        : `${httpsOrigin()}/?book=BOOK_ID&embed=1`;
       const code = `<iframe src="${src}" width="860" height="640" frameborder="0" allowfullscreen style="border-radius:12px;overflow:hidden"></iframe>`;
 
       // Show in zoom overlay area

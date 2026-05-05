@@ -1455,6 +1455,11 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+    /* 強制分享連結使用 https */
+    function httpsOrigin() {
+      return location.origin.replace(/^http:/, 'https:');
+    }
+
     /* !! CONFIG !! */
     const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev'; // ← 填入 Worker 網址
 
@@ -1528,10 +1533,10 @@
       renderTbl(q ? allBooks.filter(b => b.title.toLowerCase().includes(q) || b.id.includes(q)) : allBooks);
     }
 
-    function openB(id) { window.open(`${location.origin}/?book=${id}`, '_blank') }
+    function openB(id) { window.open(`${httpsOrigin()}/?book=${id}`, '_blank') }
     function copyL(id, st) {
       if (st !== 'pub') { toast('⚠ 此書尚未上架，短連結不可用', 'er'); return }
-      navigator.clipboard.writeText(`${location.origin}/?book=${id}`).then(() => toast('✓ 連結已複製', 'ok'));
+      navigator.clipboard.writeText(`${httpsOrigin()}/?book=${id}`).then(() => toast('✓ 連結已複製', 'ok'));
     }
 
     /* EDIT MODAL */
@@ -1565,7 +1570,7 @@
       if (b.published && WORKER_URL) {
         embedWrap.style.display = '';
         document.getElementById('m-embed-code').textContent =
-          `<iframe src="${location.origin}/?book=${id}&embed=1" width="860" height="640" frameborder="0" allowfullscreen style="border-radius:12px"></iframe>`;
+          `<iframe src="${httpsOrigin()}/?book=${id}&embed=1" width="860" height="640" frameborder="0" allowfullscreen style="border-radius:12px"></iframe>`;
       } else {
         embedWrap.style.display = 'none';
       }
@@ -1838,7 +1843,7 @@
   <div class="qi-st" id="qs${i}">${labels[item.status]}</div>
   <div class="qi-bw"><div class="qi-bf" id="qb${i}"></div></div>
 </div>
-${item.id ? `<a class="qi-lk" href="${location.origin}/?book=${item.id}" target="_blank">?book=${item.id}</a>` : ''}`;
+${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_blank">?book=${item.id}</a>` : ''}`;
         ql.appendChild(el);
       });
       btn.classList.toggle('vis', batchFiles.length > 0 && !uploading);
@@ -1934,8 +1939,8 @@ ${item.id ? `<a class="qi-lk" href="${location.origin}/?book=${item.id}" target=
         results.forEach(r => {
           const d = document.createElement('div'); d.className = 'ritem';
           d.innerHTML = `<span class="ri-t">${esc(r.title)}</span>
-<span class="ri-u">${location.origin}/?book=${r.id}</span>
-<button class="ri-cp" onclick="navigator.clipboard.writeText('${location.origin}/?book=${r.id}').then(()=>toast('✓ 已複製','ok'))">複製</button>`;
+<span class="ri-u">${httpsOrigin()}/?book=${r.id}</span>
+<button class="ri-cp" onclick="navigator.clipboard.writeText('${httpsOrigin()}/?book=${r.id}').then(()=>toast('✓ 已複製','ok'))">複製</button>`;
           rl.appendChild(d);
         });
         document.getElementById('resbox').style.display = '';

@@ -953,6 +953,11 @@
     <div class="toast" id="toast"></div>
 
     <script>
+      /* 強制分享連結使用 https */
+      function httpsOrigin() {
+        return location.origin.replace(/^http:/, 'https:');
+      }
+
       const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev';// ← 填入 Worker 網址
 
       let adminKey = '', allBooks = [], curF = 'all', curV = 'grid', curCat = '', allCats = [];
@@ -1057,11 +1062,11 @@ ${progPct > 0 ? `<div class="prog-bar-wrap" style="margin-top:8px;border-radius:
         document.getElementById('fm').textContent = `${allBooks.length} 本書籍 · FlipCloud`;
       }
 
-      function openB(id, e) { e?.stopPropagation?.(); window.open(`${location.origin}/?book=${id}`, '_blank') }
+      function openB(id, e) { e?.stopPropagation?.(); window.open(`${httpsOrigin()}/?book=${id}`, '_blank') }
       function copyL(id, st, e) {
         e?.stopPropagation?.();
         if (st !== 'pub') { toast('⚠ 此書尚未上架'); return }
-        navigator.clipboard.writeText(`${location.origin}/?book=${id}`).then(() => toast('✓ 連結已複製'));
+        navigator.clipboard.writeText(`${httpsOrigin()}/?book=${id}`).then(() => toast('✓ 連結已複製'));
       }
 
       function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2500) }
