@@ -1605,9 +1605,25 @@
       </div>
 
       <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-upload" onclick="switchMode('upload')">上傳 PDF</button>
         <button class="mode-tab" id="tab-open" onclick="switchMode('open')">開啟書籍</button>
       </div>
 
+      <!-- Upload PDF pane -->
+      <div class="upload-pane active" id="pane-upload">
+        <div class="drop-card" id="drop-card">
+          <input type="file" id="pdf-input" accept=".pdf">
+          <div class="drop-icon">📖</div>
+          <div class="drop-title">上傳 PDF，轉成翻頁書</div>
+          <div class="drop-hint">拖曳至此，或 <strong>點擊選擇</strong><br>最多 50 頁 · 自動儲存雲端</div>
+        </div>
+        <button class="upload-cta" onclick="document.getElementById('pdf-input').click()">
+          <svg viewBox="0 0 24 24" width="16" fill="currentColor">
+            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+          </svg>
+          選擇 PDF 檔案
+        </button>
+      </div>
 
       <!-- Open by ID pane -->
       <div class="upload-pane" id="pane-open">
@@ -1630,13 +1646,19 @@
     <div class="prog-card">
       <div class="prog-steps">
         <div class="prog-step active" id="step-convert">
-          <div class="step-dot"></div><span>載入中</span>
+          <div class="step-dot"></div><span>轉換 PDF 頁面</span>
+        </div>
+        <div class="prog-step" id="step-upload">
+          <div class="step-dot"></div><span>上傳至雲端</span>
+        </div>
+        <div class="prog-step" id="step-link">
+          <div class="step-dot"></div><span>生成短連結</span>
         </div>
       </div>
       <div class="prog-bg">
         <div class="prog-fill" id="prog-fill"></div>
       </div>
-      <div class="prog-label" id="prog-label">載入中…</div>
+      <div class="prog-label" id="prog-label">準備中…</div>
     </div>
   </div>
 
