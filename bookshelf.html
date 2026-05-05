@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鑫囍探索旅遊手冊 目錄</title>
+  <title>鑫囍探索旅行 目錄</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
@@ -866,7 +866,7 @@
 
   <div id="login">
     <div class="lcard">
-      <div class="l-logo"><img src="logo.svg" alt="鑫囍探索旅遊手冊" style="height:44px;margin:0 auto 12px;display:block;"></div>
+      <div class="l-logo"><img src="logo.svg" alt="鑫囍探索旅行" style="height:44px;margin:0 auto 12px;display:block;"></div>
       <div class="l-sub">Private Library · 私人書架</div>
       <div class="l-lbl">請輸入存取密碼</div>
       <input class="l-inp" id="lpass" type="password" placeholder="Access Key">
@@ -878,7 +878,7 @@
   <div id="main">
     <header>
       <a class="logo" href="bookshelf.html">
-        <img src="logo.svg" alt="鑫囍探索旅遊手冊" style="height:32px;display:block;">
+        <img src="logo.svg" alt="鑫囍探索旅行" style="height:32px;display:block;">
       </a>
       <div class="hr"></div>
       <a class="hbtn" href="admin.html">管理後台</a>
@@ -888,7 +888,7 @@
     <section class="hero">
       <div class="hero-t">
         <div class="hero-h">我的<em>書架</em></div>
-        <div class="hero-s">FlipCloud Digital Library</div>
+        <div class="hero-s">鑫囍探索旅行 · 數位書架</div>
       </div>
       <div class="hero-c" id="hc">載入中…</div>
     </section>
@@ -946,7 +946,7 @@
     </main>
 
     <footer>
-      <div class="fl">FlipCloud</div>
+      <div class="fl">鑫囍探索旅行</div>
       <div class="fm" id="fm">—</div>
     </footer>
 
@@ -959,14 +959,15 @@
       }
 
       const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev';// ← 填入 Worker 網址
+      const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8';
 
-      let adminKey = '', allBooks = [], curF = 'all', curV = 'grid', curCat = '', allCats = [];
+      let allBooks = [], curF = 'all', curV = 'grid', curCat = '', allCats = [];
 
       function doLogin() {
         const k = document.getElementById('lpass').value.trim(); if (!k) return;
-        fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': k } })
+        fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': API_KEY, 'X-Bookshelf-Key': k } })
           .then(r => { if (!r.ok) throw 0; return r.json() })
-          .then(d => { adminKey = k; sessionStorage.setItem('fc_key', k); allBooks = d; document.getElementById('login').style.display = 'none'; document.getElementById('main').style.display = ''; render(allBooks); updateMeta(); loadCatFilter(); })
+          .then(d => { sessionStorage.setItem('fc_key', k); allBooks = d; document.getElementById('login').style.display = 'none'; document.getElementById('main').style.display = ''; render(allBooks); updateMeta(); loadCatFilter(); })
           .catch(() => { document.getElementById('lerr').style.display = 'block'; document.getElementById('lpass').value = '' });
       }
       document.getElementById('lpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });

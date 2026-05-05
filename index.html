@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鑫囍探索旅遊手冊</title>
+  <title>鑫囍探索旅行</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -1543,6 +1543,34 @@
         transform: translateX(-100%);
       }
 
+      /* ── 手機版 Topbar 優化 ── */
+      #topbar {
+        padding: 0 8px;
+        justify-content: space-between;
+      }
+      .tb-logo { margin-right: 8px; }
+      .tb-logo img { height: 24px !important; }
+      .tb-sep, .tb-book-title, .tb-cloud { display: none !important; }
+      
+      /* 手機版隱藏不常用按鈕 */
+      .tb-btn[onclick="showEmbedCode()"], 
+      .tb-btn[onclick="resetApp()"],
+      #sep-share { 
+        display: none !important; 
+      }
+
+      /* 分享列優化：手機版不顯示網址，僅留複製按鈕 */
+      #share-bar {
+        padding: 4px;
+        background: transparent;
+        border: none;
+      }
+      .share-url-text { display: none !important; }
+      .share-copy-btn {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+      }
+
       /* 單頁模式調整 */
       .is-mobile .book-wrap {
         width: var(--page-w);
@@ -1595,9 +1623,9 @@
   <div id="upload-screen">
     <div class="upload-wrap">
       <div class="logo-mark">
-        <div class="logo-pip"></div>FlipCloud
+        <div class="logo-pip"></div>鑫囍探索旅行
       </div>
-      <div class="upload-sub">Cloud Flipbook System</div>
+      <div class="upload-sub">Professional Travel Reader</div>
 
       <div class="cfg-warn" id="cfg-warn">
         ⚠ 尚未設定 Worker 網址，雲端儲存功能將無法使用。<br>
@@ -1666,7 +1694,7 @@
   <div id="app">
     <!-- Topbar -->
     <div id="topbar">
-      <div class="tb-logo"><img src="logo.svg" alt="鑫囍探索旅遊手冊" style="height:28px;vertical-align:middle;display:block;">
+      <div class="tb-logo"><img src="logo.svg" alt="鑫囍探索旅行" style="height:28px;vertical-align:middle;display:block;">
       </div>
       <div class="tb-sep"></div>
       <div class="tb-book-title" id="tb-title">—</div>

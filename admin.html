@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鑫囍探索旅遊手冊 管理後台</title>
+  <title>鑫囍探索旅行 管理後台</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
@@ -1072,10 +1072,9 @@
 
 <body>
 
-  <!-- Login -->
   <div id="login">
     <div class="lc">
-      <div class="ll"><img src="logo.svg" alt="鑫囍探索旅遊手冊" style="height:40px;margin:0 auto 10px;display:block;"></div>
+      <div class="ll"><img src="logo.svg" alt="鑫囍探索旅行" style="height:40px;margin:0 auto 10px;display:block;"></div>
       <div class="ls">Admin · 管理後台</div>
       <div style="font-size:.8rem;color:#ffffff44;text-align:left;margin-bottom:8px">Admin Key</div>
       <input class="li" id="lpass" type="password" placeholder="輸入管理金鑰">
@@ -1087,7 +1086,7 @@
   <!-- Shell -->
   <div id="shell">
     <div id="tb">
-      <div class="tbl"><img src="logo.svg" alt="鑫囍探索旅遊手冊" style="height:28px;display:block;"></div>
+      <div class="tbl"><img src="logo.svg" alt="鑫囍探索旅行" style="height:28px;display:block;"></div>
       <div class="tbg">管理後台</div>
       <div class="tbs"></div>
       <a class="tbl2" href="bookshelf.html">← 書架</a>
@@ -1462,16 +1461,18 @@
 
     /* !! CONFIG !! */
     const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev'; // ← 填入 Worker 網址
+    const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8'; // ← 填入剛產出的 H256 API KEY
 
-    let adminKey = '', allBooks = [], batchFiles = [], uploading = false, delTarget = null, editId = null, isPub = false;
+    let allBooks = [], batchFiles = [], uploading = false, delTarget = null, editId = null, isPub = false;
 
     /* LOGIN */
     function doLogin() {
       const k = document.getElementById('lpass').value.trim(); if (!k) return;
-      fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': k } })
+      // 這裡您可以選擇由伺服器驗證 Admin Pass，或是前端簡單檢查
+      fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': API_KEY, 'X-Admin-Key': k } })
         .then(r => { if (!r.ok) throw 0; return r.json() })
         .then(d => {
-          adminKey = k; sessionStorage.setItem('fc_admin', k);
+          sessionStorage.setItem('fc_admin_pass', k);
           allBooks = d;
           document.getElementById('login').style.display = 'none';
           document.getElementById('shell').style.display = 'flex';
@@ -1479,9 +1480,9 @@
         })
         .catch(() => { document.getElementById('lerr').style.display = 'block'; document.getElementById('lpass').value = '' });
     }
-    function doLogout() { sessionStorage.removeItem('fc_admin'); adminKey = ''; document.getElementById('login').style.display = 'flex'; document.getElementById('shell').style.display = 'none'; document.getElementById('lpass').value = '' }
+    function doLogout() { sessionStorage.removeItem('fc_admin_pass'); document.getElementById('login').style.display = 'flex'; document.getElementById('shell').style.display = 'none'; document.getElementById('lpass').value = '' }
     document.getElementById('lpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
-    window.addEventListener('load', () => { const s = sessionStorage.getItem('fc_admin'); if (s && WORKER_URL) { document.getElementById('lpass').value = s; doLogin() } });
+    window.addEventListener('load', () => { const s = sessionStorage.getItem('fc_admin_pass'); if (s && WORKER_URL) { document.getElementById('lpass').value = s; doLogin() } });
 
     /* NAV */
     function switchP(p) {
@@ -1610,7 +1611,11 @@
       if (pw !== undefined) payload.password = pw; // '' removes password, string sets it
       try {
         const r = await fetch(`${WORKER_URL}/api/book/${editId}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey },
+          method: 'PATCH', headers: { 
+            'Content-Type': 'application/json', 
+            'X-API-Key': API_KEY,
+            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+          },
           body: JSON.stringify(payload),
         });
         if (!r.ok) throw 0;
@@ -1625,7 +1630,11 @@
 
           const cr = await fetch(`${WORKER_URL}/api/book/${editId}/cover`, {
             method: method,
-            headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey },
+            headers: { 
+              'Content-Type': 'application/json', 
+              'X-API-Key': API_KEY,
+              'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+            },
             body: body,
           });
           if (cr.ok) {
@@ -1651,7 +1660,13 @@
       const target = delTarget;
       if (!target) return; closeConf();
       try {
-        const r = await fetch(`${WORKER_URL}/api/book/${target}`, { method: 'DELETE', headers: { 'X-API-Key': adminKey } });
+        const r = await fetch(`${WORKER_URL}/api/book/${target}`, { 
+          method: 'DELETE', 
+          headers: { 
+            'X-API-Key': API_KEY,
+            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+          } 
+        });
         if (!r.ok) throw 0;
         allBooks = allBooks.filter(b => b.id !== target);
         renderTbl(); updateStats(); toast('✓ 書籍已刪除', 'ok');
@@ -1726,7 +1741,15 @@
       const inp = document.getElementById('cat-inp');
       const name = inp.value.trim(); if (!name) return;
       try {
-        const r = await fetch(`${WORKER_URL}/api/categories`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey }, body: JSON.stringify({ name }) });
+        const r = await fetch(`${WORKER_URL}/api/categories`, { 
+          method: 'POST', 
+          headers: { 
+            'Content-Type': 'application/json', 
+            'X-API-Key': API_KEY,
+            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+          }, 
+          body: JSON.stringify({ name }) 
+        });
         if (!r.ok) throw 0;
         const d = await r.json(); allCats = d.categories; renderCats(); inp.value = '';
         toast('✓ 分類已新增', 'ok');
@@ -1735,7 +1758,15 @@
 
     async function delCat(name) {
       try {
-        const r = await fetch(`${WORKER_URL}/api/categories`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey }, body: JSON.stringify({ name }) });
+        const r = await fetch(`${WORKER_URL}/api/categories`, { 
+          method: 'DELETE', 
+          headers: { 
+            'Content-Type': 'application/json', 
+            'X-API-Key': API_KEY,
+            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+          }, 
+          body: JSON.stringify({ name }) 
+        });
         if (!r.ok) throw 0;
         const d = await r.json(); allCats = d.categories; renderCats();
         toast('✓ 分類已刪除', 'ok');
@@ -1770,7 +1801,12 @@
       if (!id) { document.getElementById('stat-book-detail').style.display = 'none'; document.getElementById('stat-book-empty').style.display = ''; return; }
       document.getElementById('stat-book-empty').style.display = 'none';
       try {
-        const r = await fetch(`${WORKER_URL}/api/book/${id}/stats`, { headers: { 'X-API-Key': adminKey } });
+        const r = await fetch(`${WORKER_URL}/api/book/${id}/stats`, { 
+          headers: { 
+            'X-API-Key': API_KEY,
+            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+          } 
+        });
         if (!r.ok) throw 0;
         const s = await r.json();
         document.getElementById('bs-views').textContent = s.totalViews.toLocaleString();
@@ -1923,7 +1959,12 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
 
           const title = item.file.name.replace(/\.pdf$/i, '');
           const r = await fetch(`${WORKER_URL}/api/upload`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': adminKey },
+            method: 'POST', 
+            headers: { 
+              'Content-Type': 'application/json', 
+              'X-API-Key': API_KEY,
+              'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
+            },
             body: JSON.stringify({ title, pages }),
           });
           if (!r.ok) throw 0;
