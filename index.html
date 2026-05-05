@@ -22,7 +22,7 @@
       --toolbar-h: 52px;
       --page-w: 400px;
       --page-h: 533px;
-      --transition: .55s cubic-bezier(.4, 0, .2, 1);
+      --transition: .8s cubic-bezier(.4, 0, .2, 1);
     }
 
     *,
@@ -2417,7 +2417,7 @@
     /* ══════════════════════════════════════════
        FLIP
     ══════════════════════════════════════════ */
-    const FLIP_MS = 550; // 與 --transition 同步
+    const FLIP_MS = 800; // 與 --transition 同步
 
     function turnPage(dir) {
       if (isFlipping) return;
@@ -2435,33 +2435,41 @@
       fp.style.transition = 'none';
 
       if (dir > 0) {
-        // ── 向右翻（下一頁）──
-        fp.style.cssText = 'left:0;transform-origin:right center;transform:rotateY(0deg);display:block;will-change:transform';
-        buildFlipImg(face, currentSpread, 'left');
-        buildFlipImg(back, next, 'left');
-        // 強制瀏覽器重新計算後再啟動動畫
-        void fp.offsetWidth;
-        fp.style.transition = 'transform var(--transition)';
-        fp.style.transform = 'rotateY(-180deg)';
-      } else {
-        // ── 向左翻（上一頁）──
-        fp.style.cssText = 'left:50%;transform-origin:left center;transform:rotateY(-180deg);display:block;will-change:transform';
+        // ── 下一頁 (下一展開) ──
+        // 應將「目前右頁」翻到「左邊」，露出「下一展開的左頁」
+        fp.style.cssText = `left:50%; transform-origin:left center; transform:rotateY(0deg); display:block; will-change:transform; transition:none;`;
         buildFlipImg(face, currentSpread, 'right');
+        buildFlipImg(back, next, 'left');
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fp.style.transition = 'transform var(--transition)';
+            fp.style.transform = 'rotateY(-180deg)';
+          });
+        });
+      } else {
+        // ── 上一頁 (上一展開) ──
+        // 應將「目前左頁」翻到「右邊」，露出「上一展開的右頁」
+        fp.style.cssText = `left:0; transform-origin:right center; transform:rotateY(0deg); display:block; will-change:transform; transition:none;`;
+        buildFlipImg(face, currentSpread, 'left');
         buildFlipImg(back, next, 'right');
-        void fp.offsetWidth;
-        fp.style.transition = 'transform var(--transition)';
-        fp.style.transform = 'rotateY(0deg)';
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fp.style.transition = 'transform var(--transition)';
+            fp.style.transform = 'rotateY(180deg)';
+          });
+        });
       }
 
       setTimeout(() => {
         fp.style.transition = 'none';
         fp.style.display = 'none';
-        fp.classList.remove('go');
         currentSpread = next;
         renderSpread(currentSpread);
         if (bookId) saveProgress(bookId, currentSpread);
         isFlipping = false;
-      }, FLIP_MS + 20);
+      }, FLIP_MS + 50);
     }
 
     function buildFlipImg(container, spreadIdx, side) {
