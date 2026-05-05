@@ -961,6 +961,12 @@
       const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev';// ← 填入 Worker 網址
       const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8';
 
+      function fullUrl(url) {
+        if (!url) return '';
+        if (url.startsWith('http') || url.startsWith('data:')) return url;
+        return WORKER_URL.replace(/\/$/, '') + (url.startsWith('/') ? url : '/' + url);
+      }
+
       let allBooks = [], curF = 'all', curV = 'grid', curCat = '', allCats = [];
 
       function doLogin() {
@@ -1036,7 +1042,7 @@
           const progPct = b.pageCount > 0 ? Math.min(100, Math.round(prog / (Math.ceil(b.pageCount / 2) + 1) * 100)) : 0;
           const catHtml = b.category ? `<div class="cat-row"><span class="cat-pill">${esc(b.category)}</span></div>` : '';
           const coverHtml = b.coverUrl
-            ? `<img src="${esc(b.coverUrl)}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`
+            ? `<img src="${esc(fullUrl(b.coverUrl))}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`
             : `<div class="cph"><div class="cph-o">❧</div><div class="cph-t">${esc(b.title)}</div><div class="cph-r"></div></div>`;
           const c = document.createElement('div'); c.className = 'bc'; c.style.animationDelay = (i * .035) + 's';
           c.innerHTML = `<div class="sstrip ${st}"></div>
