@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>鑫囍探索旅行 管理後台</title>
+  <link rel="icon" href="favicon.ico">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
@@ -1543,7 +1544,7 @@
     function openB(id) { window.open(`${httpsOrigin()}/?book=${id}`, '_blank') }
     function copyL(id, st) {
       if (st !== 'pub') { toast('⚠ 此書尚未上架，短連結不可用', 'er'); return }
-      navigator.clipboard.writeText(`${httpsOrigin()}/?book=${id}`).then(() => toast('✓ 連結已複製', 'ok'));
+      navigator.clipboard.writeText(`${WORKER_URL}/r/${id}`).then(() => toast('✓ 連結已複製', 'ok'));
     }
 
     /* EDIT MODAL */
@@ -1993,8 +1994,8 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
         results.forEach(r => {
           const d = document.createElement('div'); d.className = 'ritem';
           d.innerHTML = `<span class="ri-t">${esc(r.title)}</span>
-<span class="ri-u">${httpsOrigin()}/?book=${r.id}</span>
-<button class="ri-cp" onclick="navigator.clipboard.writeText('${httpsOrigin()}/?book=${r.id}').then(()=>toast('✓ 已複製','ok'))">複製</button>`;
+<span class="ri-u">${WORKER_URL}/r/${r.id}</span>
+<button class="ri-cp" onclick="navigator.clipboard.writeText('${WORKER_URL}/r/${r.id}').then(()=>toast('✓ 已複製','ok'))">複製</button>`;
           rl.appendChild(d);
         });
         document.getElementById('resbox').style.display = '';

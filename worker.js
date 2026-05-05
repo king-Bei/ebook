@@ -397,10 +397,10 @@ async function shortLink(id, request, env) {
     return notAvailPage('已下架', '此書籍已結束公開閱讀期間。');
   const origin = new URL(request.url).origin;
   return new Response(`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(book.title)} · FlipCloud</title>
+<title>${esc(book.title)}</title>
 <meta property="og:title" content="${esc(book.title)}">
-<meta property="og:description" content="${book.pageCount} 頁翻頁書">
-${book.coverUrl ? `<meta property="og:image" content="${esc(book.coverUrl)}">` : ''}
+<meta property="og:description" content="${esc(book.title)}">
+<meta property="og:image" content="${origin}/logo-purple.png">
 <style>body{font-family:serif;background:#12100a;color:#f5f0e8;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.s{text-align:center}.sp{width:40px;height:40px;border:2px solid #ffffff11;border-top-color:#c8a96e;border-radius:50%;animation:s .8s linear infinite;margin:0 auto 16px}@keyframes s{to{transform:rotate(360deg)}}p{color:#c8a96e99;font-size:.9rem}</style>
 </head><body><div class="s"><div class="sp"></div><p>載入《${esc(book.title)}》</p></div>
 <script>window.location.href='${origin}/?book=${id}';<\/script></body></html>`,

@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>鑫囍探索旅行 目錄</title>
+  <link rel="icon" href="favicon.ico">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
@@ -1072,7 +1073,7 @@ ${progPct > 0 ? `<div class="prog-bar-wrap" style="margin-top:8px;border-radius:
       function copyL(id, st, e) {
         e?.stopPropagation?.();
         if (st !== 'pub') { toast('⚠ 此書尚未上架'); return }
-        navigator.clipboard.writeText(`${httpsOrigin()}/?book=${id}`).then(() => toast('✓ 連結已複製'));
+        navigator.clipboard.writeText(`${WORKER_URL}/r/${id}`).then(() => toast('✓ 連結已複製'));
       }
 
       function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2500) }

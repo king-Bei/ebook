@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鑫囍探索旅行</title>
+  <title>鑫囍探索旅行 電子手冊</title>
+  <link rel="icon" href="favicon.ico">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -1548,15 +1549,26 @@
         padding: 0 8px;
         justify-content: space-between;
       }
-      .tb-logo { margin-right: 8px; }
-      .tb-logo img { height: 24px !important; }
-      .tb-sep, .tb-book-title, .tb-cloud { display: none !important; }
-      
+
+      .tb-logo {
+        margin-right: 8px;
+      }
+
+      .tb-logo img {
+        height: 24px !important;
+      }
+
+      .tb-sep,
+      .tb-book-title,
+      .tb-cloud {
+        display: none !important;
+      }
+
       /* 手機版隱藏不常用按鈕 */
-      .tb-btn[onclick="showEmbedCode()"], 
+      .tb-btn[onclick="showEmbedCode()"],
       .tb-btn[onclick="resetApp()"],
-      #sep-share { 
-        display: none !important; 
+      #sep-share {
+        display: none !important;
       }
 
       /* 分享列優化：手機版不顯示網址，僅留複製按鈕 */
@@ -1565,7 +1577,11 @@
         background: transparent;
         border: none;
       }
-      .share-url-text { display: none !important; }
+
+      .share-url-text {
+        display: none !important;
+      }
+
       .share-copy-btn {
         padding: 8px 12px;
         font-size: 0.75rem;
