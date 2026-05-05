@@ -865,14 +865,14 @@
 <body>
 
   <div id="login">
-    <div class="lcard">
+    <form class="lcard" onsubmit="event.preventDefault(); doLogin();">
       <div class="l-logo"><img src="logo.svg" alt="鑫囍探索旅行" style="height:44px;margin:0 auto 12px;display:block;"></div>
-      <div class="l-sub">Private Library · 私人書架</div>
+      <div class="l-sub">鑫囍探索旅行 書架</div>
       <div class="l-lbl">請輸入存取密碼</div>
-      <input class="l-inp" id="lpass" type="password" placeholder="Access Key">
-      <button class="l-btn" onclick="doLogin()">進入書架</button>
+      <input class="l-inp" id="lpass" type="password" placeholder="Access Key" required>
+      <button class="l-btn" type="submit">進入書架</button>
       <div class="l-err" id="lerr">密碼錯誤，請重試</div>
-    </div>
+    </form>
   </div>
 
   <div id="main">
@@ -976,7 +976,6 @@
           .then(d => { sessionStorage.setItem('fc_key', k); allBooks = d; document.getElementById('login').style.display = 'none'; document.getElementById('main').style.display = ''; render(allBooks); updateMeta(); loadCatFilter(); })
           .catch(() => { document.getElementById('lerr').style.display = 'block'; document.getElementById('lpass').value = '' });
       }
-      document.getElementById('lpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
       window.addEventListener('load', () => { const s = sessionStorage.getItem('fc_key'); if (s && WORKER_URL) { document.getElementById('lpass').value = s; doLogin() } });
 
       async function loadCatFilter() {
