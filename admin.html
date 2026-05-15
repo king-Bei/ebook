@@ -1480,6 +1480,10 @@
       return url.href.replace(/^http:/, 'https:') + '?book=' + id;
     }
 
+    function httpsOrigin() {
+      return location.origin.replace(/^http:/, 'https:');
+    }
+
     /* !! CONFIG !! */
     const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev'; // ← 填入 Worker 網址
     const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8'; // ← 填入剛產出的 H256 API KEY
@@ -1585,14 +1589,30 @@
       // Cover preview
       const prev = document.getElementById('cover-preview');
       const delBtn = document.getElementById('cover-del-btn');
+      
+      // 更新封面預覽，但不移除 input
+      let visual = prev.querySelector('.cv-img');
       if (b.coverUrl) {
-        prev.innerHTML = `<img src="${fullUrl(b.coverUrl)}" style="width:100%;height:100%;object-fit:cover"><input type="file" id="cover-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        prev.querySelector('span')?.remove();
+        if (!visual) {
+          visual = document.createElement('img');
+          visual.className = 'cv-img';
+          visual.style.cssText = 'width:100%;height:100%;object-fit:cover';
+          prev.insertBefore(visual, prev.firstChild);
+        }
+        visual.src = fullUrl(b.coverUrl);
         delBtn.style.display = '';
       } else {
-        prev.innerHTML = `<span style="font-size:1.2rem;opacity:.3">🖼</span><input type="file" id="cover-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        visual?.remove();
+        if (!prev.querySelector('span')) {
+          const span = document.createElement('span');
+          span.style.cssText = 'font-size:1.2rem;opacity:.3';
+          span.textContent = '🖼';
+          prev.insertBefore(span, prev.firstChild);
+        }
         delBtn.style.display = 'none';
       }
-      document.getElementById('cover-file').addEventListener('change', handleCoverSelect);
+
       // Embed code (only if published)
       const embedWrap = document.getElementById('m-embed-wrap');
       if (b.published && WORKER_URL) {
@@ -1609,7 +1629,6 @@
       reuploadPages = null;
       document.getElementById('reupload-status').textContent = '未選擇新檔案';
       document.getElementById('reupload-prog-wrap').style.display = 'none';
-      document.getElementById('reupload-input').addEventListener('change', handleReuploadSelect);
     }
 
     function toLocal(iso) {
@@ -1771,8 +1790,15 @@
           if (dataUrl.length * 0.75 > 200000) dataUrl = cv.toDataURL('image/jpeg', 0.65);
           pendingCoverDataUrl = dataUrl;
           const prev = document.getElementById('cover-preview');
-          prev.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover"><input type="file" id="cover-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
-          document.getElementById('cover-file').addEventListener('change', handleCoverSelect);
+          let visual = prev.querySelector('.cv-img');
+          if (!visual) {
+            visual = document.createElement('img');
+            visual.className = 'cv-img';
+            visual.style.cssText = 'width:100%;height:100%;object-fit:cover';
+            prev.querySelector('span')?.remove();
+            prev.insertBefore(visual, prev.firstChild);
+          }
+          visual.src = dataUrl;
           document.getElementById('cover-del-btn').style.display = '';
         };
         img.src = ev.target.result;
@@ -1783,8 +1809,13 @@
     function removeCover() {
       pendingCoverDataUrl = 'REMOVE';
       const prev = document.getElementById('cover-preview');
-      prev.innerHTML = `<span style="font-size:1.2rem;opacity:.3">🖼</span><input type="file" id="cover-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
-      document.getElementById('cover-file').addEventListener('change', handleCoverSelect);
+      prev.querySelector('.cv-img')?.remove();
+      if (!prev.querySelector('span')) {
+        const span = document.createElement('span');
+        span.style.cssText = 'font-size:1.2rem;opacity:.3';
+        span.textContent = '🖼';
+        prev.insertBefore(span, prev.firstChild);
+      }
       document.getElementById('cover-del-btn').style.display = 'none';
     }
 
@@ -1984,29 +2015,45 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
       const vp1 = pg1.getViewport({ scale: 1 });
       const aspect = vp1.width / vp1.height;
 
-      // Target: max 1200px on longest side for web viewing
-      const MAX_PX = 1200;
+      // Target: max 1600px on longest side for high quality web viewing
+      const MAX_PX = 1600;
       let scale;
       if (aspect >= 1) {
         scale = MAX_PX / vp1.width;
       } else {
         scale = MAX_PX / vp1.height;
       }
-      // Don't upscale tiny PDFs
-      if (scale > 2) scale = 2;
+      // Don't upscale tiny PDFs too much
+      if (scale > 3) scale = 3;
 
       for (let i = 1; i <= n; i++) {
         const pg = await pdf.getPage(i);
         const vp = pg.getViewport({ scale });
         const cv = document.createElement('canvas');
         cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
-        await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        const ctx = cv.getContext('2d');
+        
+        // Ensure white background (fix transparency issues)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, cv.width, cv.height);
+        
+        // High quality rendering hints
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        await pg.render({ 
+          canvasContext: ctx, 
+          viewport: vp,
+          intent: 'print' // Use print intent for better text rendering
+        }).promise;
 
-        // Adaptive quality: try 0.82 first, if >180KB drop to 0.65, then 0.5
-        let dataUrl = cv.toDataURL('image/jpeg', 0.82);
-        const sz = Math.round(dataUrl.length * 0.75); // approx bytes
-        if (sz > 180000) dataUrl = cv.toDataURL('image/jpeg', 0.65);
-        if (sz > 280000) dataUrl = cv.toDataURL('image/jpeg', 0.5);
+        // Adaptive quality: target ~120-180KB per page
+        let dataUrl = cv.toDataURL('image/jpeg', 0.85);
+        let sz = Math.round(dataUrl.length * 0.75);
+        
+        if (sz > 220000) dataUrl = cv.toDataURL('image/jpeg', 0.75);
+        sz = Math.round(dataUrl.length * 0.75);
+        if (sz > 350000) dataUrl = cv.toDataURL('image/jpeg', 0.6);
 
         pages.push(dataUrl);
         onP(i, n);
@@ -2081,6 +2128,10 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
     }
 
     function toast(m, t = 'ok') { const el = document.getElementById('toast'); el.textContent = m; el.className = `toast ${t} show`; clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2800) }
+    // Initialize listeners
+    document.getElementById('cover-file').addEventListener('change', handleCoverSelect);
+    document.getElementById('reupload-input').addEventListener('change', handleReuploadSelect);
+
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
   </script>
 </body>
