@@ -238,13 +238,44 @@ async function updateBook(request, id, env) {
   if ('password' in body) {
     book.passwordHash = body.password ? await sha256(body.password) : null;
   }
+
+  // Overwrite pages if provided
+  if ('pages' in body && Array.isArray(body.pages) && body.pages.length > 0) {
+    const pages = body.pages;
+    // Delete old pages
+    for (let i = 1; i <= book.pageCount; i++) {
+      await env.R2.delete(`books/${id}/page_${String(i).padStart(3, '0')}.jpg`).catch(() => { });
+    }
+    // Upload new pages
+    const r2Base = env.R2_PUBLIC_URL || 'https://pub-placeholder.r2.dev';
+    const pageUrls = [];
+    for (let i = 0; i < pages.length; i++) {
+      const raw = pages[i], b64 = raw.includes(',') ? raw.split(',')[1] : raw;
+      const mime = raw.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+      const bin = atob(b64), bytes = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+      const key = `books/${id}/page_${String(i + 1).padStart(3, '0')}.jpg`;
+      await env.R2.put(key, bytes, { httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000' } });
+      pageUrls.push(`${r2Base}/${key}`);
+    }
+    book.pageCount = pages.length;
+    book.pageUrls = pageUrls;
+    // Default cover to first page if old cover was also a page or missing
+    if (!book.coverUrl || book.coverUrl.includes('/page_')) book.coverUrl = pageUrls[0];
+  }
+
   book.updatedAt = new Date().toISOString();
   await env.KV.put(`book:${id}`, JSON.stringify(book));
   const iRaw = await env.KV.get('index:books');
   if (iRaw) {
     const idx = JSON.parse(iRaw), e = idx.find(b => b.id === id);
     if (e) {
-      Object.assign(e, { title: book.title, category: book.category, published: book.published, publishAt: book.publishAt, unpublishAt: book.unpublishAt, hasPassword: !!book.passwordHash });
+      Object.assign(e, {
+        title: book.title, category: book.category,
+        published: book.published, publishAt: book.publishAt, unpublishAt: book.unpublishAt,
+        hasPassword: !!book.passwordHash,
+        pageCount: book.pageCount, coverUrl: book.coverUrl
+      });
       await env.KV.put('index:books', JSON.stringify(idx));
     }
   }
@@ -398,8 +429,8 @@ async function shortLink(id, request, env) {
   const origin = new URL(request.url).origin;
   return new Response(`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(book.title)}</title>
-<meta property="og:title" content="${esc(book.title)}">
-<meta property="og:description" content="${esc(book.title)}">
+<meta property="og:title" content="鑫囍探索旅行 · 電子手冊">
+<meta property="og:description" content="點擊立即閱讀 🙏${esc(book.title)}">
 <meta property="og:image" content="${origin}/logo-purple.png">
 <style>body{font-family:serif;background:#12100a;color:#f5f0e8;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.s{text-align:center}.sp{width:40px;height:40px;border:2px solid #ffffff11;border-top-color:#c8a96e;border-radius:50%;animation:s .8s linear infinite;margin:0 auto 16px}@keyframes s{to{transform:rotate(360deg)}}p{color:#c8a96e99;font-size:.9rem}</style>
 </head><body><div class="s"><div class="sp"></div><p>載入《${esc(book.title)}》</p></div>

@@ -188,7 +188,7 @@
       position: fixed;
       inset: 0;
       z-index: 200;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       background: #12100a;
@@ -1883,8 +1883,9 @@
        !! CONFIG — 修改這裡 !!
     ══════════════════════════════════════════ */
     /* 強制分享連結使用 https */
-    function httpsOrigin() {
-      return location.origin.replace(/^http:/, 'https:');
+    function getReaderUrl(id) {
+      const url = new URL('./', location.href);
+      return url.href.replace(/^http:/, 'https:') + (id ? '?book=' + id : '');
     }
 
     const CONFIG = {
@@ -1963,8 +1964,8 @@
       }
 
       loadRecentBooks();
-      show('upload-screen');
-      document.getElementById('btn-sound').classList.add('active');
+      // 移除自動導向，讓頁面保持在初始狀態（上傳畫面已隱藏）
+      // show('upload-screen');
     });
 
     function applyEmbedMode() {
@@ -2172,7 +2173,7 @@
 
         bookName = data.title;
         bookId = data.id;
-        shareUrl = `${httpsOrigin()}/?book=${data.id}`;
+        shareUrl = getReaderUrl(data.id);
         isCloudBook = true;
 
         pages = data.pageUrls;
@@ -2248,13 +2249,9 @@
     function initApp() {
       checkMobile();
       if (isMobileView) {
-        totalSpreads = pages.length + 1; // 封面 + 所有頁面
-        // 手機版預設收起側邊欄
-        sidebarOpen = false;
-        document.getElementById('sidebar').classList.add('collapsed');
-        document.getElementById('btn-sidebar').classList.remove('active');
+        totalSpreads = pages.length; // 直接顯示所有頁面，不額外產生封面
       } else {
-        totalSpreads = 1 + Math.ceil(pages.length / 2);
+        totalSpreads = Math.ceil((pages.length + 1) / 2);
       }
       currentSpread = 0;
       qrGenerated = false;
@@ -2307,17 +2304,21 @@
       const grid = document.getElementById('thumb-grid');
       grid.innerHTML = '';
 
-      // Cover
-      const coverItem = mkThumb(0, 'Cover');
-      const cv = document.createElement('canvas');
-      cv.width = 120; cv.height = 160;
-      const ctx = cv.getContext('2d');
-      ctx.fillStyle = '#3d2204'; ctx.fillRect(0, 0, 120, 160);
-      ctx.fillStyle = '#c8a96e'; ctx.font = 'bold 9px serif'; ctx.textAlign = 'center';
-      bookName.split(' ').slice(0, 3).forEach((w, i) => ctx.fillText(w.slice(0, 12), 60, 60 + i * 14));
-      coverItem.insertBefore(cv, coverItem.querySelector('.thumb-num'));
-      grid.appendChild(coverItem);
+      thumbs.forEach((src, i) => {
+        const sIdx = isMobileView ? i : Math.ceil((i + 1) / 2) - (i % 2 === 0 ? 0 : 0); 
+        // Wait, computer logic for thumb mapping to spread:
+        // Page 1 (i=0) -> Spread 0
+        // Page 2 (i=1) -> Spread 1
+        // Page 3 (i=2) -> Spread 1
+        // Page 4 (i=3) -> Spread 2
+        const spreadIdx = isMobileView ? i : (i === 0 ? 0 : Math.floor((i + 1) / 2));
 
+        const item = mkThumb(spreadIdx, i + 1);
+        const el = document.createElement('img');
+        el.src = src; if (isCloudBook) el.loading = 'lazy';
+        item.insertBefore(el, item.querySelector('.thumb-num'));
+        grid.appendChild(item);
+      });
       thumbs.forEach((src, i) => {
         const item = mkThumb(1 + Math.floor(i / 2), i + 1);
         const el = isCloudBook ? (() => {
@@ -2348,9 +2349,17 @@
       const list = document.getElementById('toc-list');
       list.innerHTML = '';
       addTocItem(list, 0, '封面', '—');
-      for (let s = 1; s < totalSpreads; s++) {
-        const lp = s * 2 - 1, rp = s * 2;
-        addTocItem(list, s, rp <= pages.length ? `第 ${lp}–${rp} 頁` : `第 ${lp} 頁`, lp);
+      for (let s = 0; s < totalSpreads; s++) {
+        if (isMobileView) {
+          addTocItem(list, s, `第 ${s + 1} 頁`, s + 1);
+        } else {
+          if (s === 0) {
+            addTocItem(list, 0, '第 1 頁 (封面)', 1);
+          } else {
+            const lp = s * 2, rp = s * 2 + 1;
+            addTocItem(list, s, rp <= pages.length ? `第 ${lp}–${rp} 頁` : `第 ${lp} 頁`, lp);
+          }
+        }
       }
     }
 
@@ -2383,29 +2392,14 @@
 
       if (isMobileView) {
         // ── 手機單頁模式 ──
-        if (spreadIndex === 0) {
-          const cov = document.createElement('div');
-          cov.className = 'cover-inner';
-          cov.innerHTML = `<div class="cov-orn">❧</div>
-          <div class="cov-title">${escHtml(bookName)}</div>
-          <div class="cov-rule"></div>
-          <div class="cov-pages">${pages.length} PAGES</div>`;
-          rEl.insertBefore(cov, rEl.firstChild);
-        } else {
-          renderImgInto(rEl, spreadIndex - 1, spreadIndex);
-        }
+        renderImgInto(rEl, spreadIndex, spreadIndex + 1);
       } else {
         // ── 電腦雙頁模式 ──
         if (spreadIndex === 0) {
-          const cov = document.createElement('div');
-          cov.className = 'cover-inner';
-          cov.innerHTML = `<div class="cov-orn">❧</div>
-        <div class="cov-title">${escHtml(bookName)}</div>
-        <div class="cov-rule"></div>
-        <div class="cov-pages">${pages.length} PAGES</div>`;
-          lEl.insertBefore(cov, lEl.firstChild);
+          // 第一個展開：Page 1 在右側
           renderImgInto(rEl, 0, 1);
         } else {
+          // 後續展開：Page (2n) 在左, Page (2n+1) 在右
           const li = spreadIndex * 2 - 1, ri = spreadIndex * 2;
           renderImgInto(lEl, li, li + 1);
           renderImgInto(rEl, ri, ri + 1);
@@ -2480,12 +2474,16 @@
         });
       }
 
+      // 關鍵優化：在動畫進行中切換底層頁面，使露出的背景內容正確
       setTimeout(() => {
-        fp.style.transition = 'none';
-        fp.style.display = 'none';
         currentSpread = next;
         renderSpread(currentSpread);
         if (bookId) saveProgress(bookId, currentSpread);
+      }, 100); 
+
+      setTimeout(() => {
+        fp.style.transition = 'none';
+        fp.style.display = 'none';
         isFlipping = false;
       }, FLIP_MS + 50);
     }

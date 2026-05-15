@@ -1431,6 +1431,26 @@
         </button>
       </div>
 
+      <!-- Re-upload section -->
+      <div class="mf">
+        <div class="mlbl">
+          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+          重新上傳 PDF (覆蓋內容)
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="bbtn rd" onclick="document.getElementById('reupload-input').click()" id="reupload-btn">選擇新 PDF</button>
+          <span id="reupload-status" style="font-family:DM Mono,monospace;font-size:.7rem;color:#ffffff22">未選擇新檔案</span>
+          <input type="file" id="reupload-input" accept=".pdf" style="display:none">
+        </div>
+        <div id="reupload-prog-wrap" style="display:none;margin-top:10px">
+          <div class="qi-bw"><div class="qi-bf" id="reupload-prog-fill" style="width:0%"></div></div>
+          <div style="font-family:DM Mono,monospace;font-size:.65rem;color:var(--warm);margin-top:5px" id="reupload-prog-label">準備轉換…</div>
+        </div>
+        <div style="font-family:DM Mono,monospace;font-size:.67rem;color:#ffffff22;margin-top:8px;line-height:1.5">
+          上傳新 PDF 將刪除現有所有頁面圖片。建議僅在需要修正內容時使用。
+        </div>
+      </div>
+
       <div class="mbrow">
         <button class="mbtn cancel" onclick="closeModal()">取消</button>
         <button class="mbtn save" onclick="saveModal()">儲存</button>
@@ -1455,9 +1475,9 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    /* 強制分享連結使用 https */
-    function httpsOrigin() {
-      return location.origin.replace(/^http:/, 'https:');
+    function getReaderUrl(id) {
+      const url = new URL('./', location.href);
+      return url.href.replace(/^http:/, 'https:') + '?book=' + id;
     }
 
     /* !! CONFIG !! */
@@ -1541,10 +1561,10 @@
       renderTbl(q ? allBooks.filter(b => b.title.toLowerCase().includes(q) || b.id.includes(q)) : allBooks);
     }
 
-    function openB(id) { window.open(`${httpsOrigin()}/?book=${id}`, '_blank') }
+    function openB(id) { window.open(getReaderUrl(id), '_blank') }
     function copyL(id, st) {
       if (st !== 'pub') { toast('⚠ 此書尚未上架，短連結不可用', 'er'); return }
-      navigator.clipboard.writeText(`${WORKER_URL}/r/${id}`).then(() => toast('✓ 連結已複製', 'ok'));
+      navigator.clipboard.writeText(getReaderUrl(id)).then(() => toast('✓ 連結已複製', 'ok'));
     }
 
     /* EDIT MODAL */
@@ -1585,6 +1605,11 @@
       updateToggle(isPub);
       loadCatSelect();
       document.getElementById('modal').classList.add('open');
+      // Reset reupload
+      reuploadPages = null;
+      document.getElementById('reupload-status').textContent = '未選擇新檔案';
+      document.getElementById('reupload-prog-wrap').style.display = 'none';
+      document.getElementById('reupload-input').addEventListener('change', handleReuploadSelect);
     }
 
     function toLocal(iso) {
@@ -1601,10 +1626,46 @@
       document.getElementById('ptog-lbl').textContent = on ? '已上架 — 公開可見' : '未上架 — 不公開';
     }
 
-    function closeModal() { document.getElementById('modal').classList.remove('open'); editId = null; pendingCoverDataUrl = null }
+    function closeModal() { 
+      document.getElementById('modal').classList.remove('open'); 
+      editId = null; pendingCoverDataUrl = null; reuploadPages = null;
+      document.getElementById('reupload-status').textContent = '未選擇新檔案';
+      document.getElementById('reupload-prog-wrap').style.display = 'none';
+    }
+
+    let reuploadPages = null;
+    function handleReuploadSelect(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const status = document.getElementById('reupload-status');
+      const progWrap = document.getElementById('reupload-prog-wrap');
+      const fill = document.getElementById('reupload-prog-fill');
+      const label = document.getElementById('reupload-prog-label');
+      
+      reuploadPages = null;
+      status.textContent = file.name;
+      progWrap.style.display = 'block';
+      fill.style.width = '0%';
+      label.textContent = '準備轉換 PDF…';
+      
+      convertPDF(file, (p, total) => {
+        fill.style.width = (p / total * 100) + '%';
+        label.textContent = `正在轉換頁面 ${p} / ${total}…`;
+      }).then(pages => {
+        reuploadPages = pages;
+        label.textContent = `轉換完成！共 ${pages.length} 頁。請點擊「儲存」開始上傳並覆蓋。`;
+        fill.style.width = '100%';
+      }).catch(err => {
+        label.textContent = '❌ 轉換失敗：' + err.message;
+        console.error(err);
+      });
+    }
 
     async function saveModal() {
       if (!editId) return;
+      const saveBtn = document.querySelector('.mbtn.save');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '正在儲存…';
+
       const payload = {
         title: document.getElementById('m-title').value.trim(),
         notes: document.getElementById('m-notes').value,
@@ -1613,9 +1674,16 @@
         publishAt: toISO(document.getElementById('m-pat').value),
         unpublishAt: toISO(document.getElementById('m-uat').value),
       };
+      // Overwrite pages if selected
+      if (reuploadPages) {
+        payload.pages = reuploadPages;
+        document.getElementById('reupload-prog-label').textContent = '正在上傳頁面圖片至雲端 (請勿關閉)…';
+      }
+
       // Only include password if field has a value (empty = remove password)
       const pw = document.getElementById('m-pass').value;
-      if (pw !== undefined) payload.password = pw; // '' removes password, string sets it
+      if (pw !== undefined) payload.password = pw; 
+      
       try {
         const r = await fetch(`${WORKER_URL}/api/book/${editId}`, {
           method: 'PATCH', headers: { 
@@ -1652,7 +1720,12 @@
 
         renderTbl(); updateStats(); closeModal();
         toast('✓ 書籍已更新', 'ok');
-      } catch { toast('⚠ 儲存失敗', 'er') }
+      } catch { 
+        toast('⚠ 儲存失敗', 'er');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '儲存';
+      }
     }
 
     /* DELETE */
@@ -1993,9 +2066,10 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
         const rl = document.getElementById('reslist'); rl.innerHTML = '';
         results.forEach(r => {
           const d = document.createElement('div'); d.className = 'ritem';
+          const url = getReaderUrl(r.id);
           d.innerHTML = `<span class="ri-t">${esc(r.title)}</span>
-<span class="ri-u">${WORKER_URL}/r/${r.id}</span>
-<button class="ri-cp" onclick="navigator.clipboard.writeText('${WORKER_URL}/r/${r.id}').then(()=>toast('✓ 已複製','ok'))">複製</button>`;
+<span class="ri-u">${url}</span>
+<button class="ri-cp" onclick="navigator.clipboard.writeText('${url}').then(()=>toast('✓ 已複製','ok'))">複製</button>`;
           rl.appendChild(d);
         });
         document.getElementById('resbox').style.display = '';
