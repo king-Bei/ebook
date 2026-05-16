@@ -1646,6 +1646,9 @@
     function initApp() {
       checkMobile();
       if (isMobileView) {
+        sidebarOpen = false;
+        document.getElementById('sidebar').classList.add('collapsed');
+        document.getElementById('btn-sidebar').classList.remove('active');
         totalSpreads = pages.length; // 直接顯示所有頁面，不額外產生封面
       } else {
         totalSpreads = Math.ceil((pages.length + 1) / 2);
