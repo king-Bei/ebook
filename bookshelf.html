@@ -6,6 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>鑫囍探索旅行 目錄</title>
   <link rel="icon" href="favicon.ico">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.VITE_SUPABASE_URL = 'https://kensuper.zeabur.app';
+    window.VITE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc1NTc3NjAwLCJleHAiOjE5MzMzNDQwMDB9.xddouv2QXvL3MR40utvhFnHV8cwNoAz8LZwibMX5esM';
+  </script>
+  <script src="auth.js"></script>
+  <link rel="stylesheet" href="style.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
@@ -621,6 +628,7 @@
       margin-bottom: 6px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden
     }
@@ -707,7 +715,8 @@
     #grid.lv .cttl {
       flex: 1;
       margin: 0;
-      -webkit-line-clamp: 1
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
     }
 
     #grid.lv .cmeta {
@@ -791,29 +800,6 @@
       }
     }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(16px);
-      background: #1e2e1e;
-      color: #8dcc8d;
-      border: 1px solid #4d7d4d33;
-      border-radius: 100px;
-      padding: 10px 24px;
-      font-family: 'DM Mono', monospace;
-      font-size: .76rem;
-      opacity: 0;
-      transition: all .3s;
-      z-index: 400;
-      pointer-events: none;
-      white-space: nowrap
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0)
-    }
 
     footer {
       position: relative;
@@ -864,17 +850,6 @@
 </head>
 
 <body>
-
-  <div id="login">
-    <form class="lcard" onsubmit="event.preventDefault(); doLogin();">
-      <div class="l-logo"><img src="logo.svg" alt="鑫囍探索旅行" style="height:44px;margin:0 auto 12px;display:block;"></div>
-      <div class="l-sub">鑫囍探索旅行 書架</div>
-      <div class="l-lbl">請輸入存取密碼</div>
-      <input class="l-inp" id="lpass" type="password" placeholder="Access Key" required>
-      <button class="l-btn" type="submit">進入書架</button>
-      <div class="l-err" id="lerr">密碼錯誤，請重試</div>
-    </form>
-  </div>
 
   <div id="main">
     <header>
@@ -947,42 +922,88 @@
     </main>
 
     <footer>
-      <div class="fl">鑫囍探索旅行</div>
-      <div class="fm" id="fm">—</div>
+      <div class="fl">Jollify Travel Ebook</div>
+      <div class="fm" id="fm">©2026 Jollify Travel</div>
     </footer>
 
     <div class="toast" id="toast"></div>
 
     <script>
       /* 強制分享連結使用 https */
-      function httpsOrigin() {
-        return location.origin.replace(/^http:/, 'https:');
+      function getReaderUrl(id) {
+        const url = new URL('./', location.href);
+        if (id) url.searchParams.set('book', id);
+        return url.href;
       }
 
-      const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev';// ← 填入 Worker 網址
-      const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8';
+      function httpsOrigin() {
+        const url = new URL('./', location.href);
+        return url.href.replace(/\/$/, '');
+      }
+
+      // const WORKER_URL = '...'; // 移至 Supabase
 
       function fullUrl(url) {
         if (!url) return '';
         if (url.startsWith('http') || url.startsWith('data:')) return url;
-        return WORKER_URL.replace(/\/$/, '') + (url.startsWith('/') ? url : '/' + url);
+        // 如果是相對路徑，直接回傳
+        return url;
       }
 
       let allBooks = [], curF = 'all', curV = 'grid', curCat = '', allCats = [];
 
-      function doLogin() {
-        const k = document.getElementById('lpass').value.trim(); if (!k) return;
-        fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': API_KEY, 'X-Bookshelf-Key': k } })
-          .then(r => { if (!r.ok) throw 0; return r.json() })
-          .then(d => { sessionStorage.setItem('fc_key', k); allBooks = d; document.getElementById('login').style.display = 'none'; document.getElementById('main').style.display = ''; render(allBooks); updateMeta(); loadCatFilter(); })
-          .catch(() => { document.getElementById('lerr').style.display = 'block'; document.getElementById('lpass').value = '' });
+      async function initBookshelf() {
+        const user = await window.auth.getCurrentUser();
+        if (user) {
+          document.getElementById('main').style.display = 'block';
+          await loadAllBooks();
+          await loadCatFilter();
+        }
       }
-      window.addEventListener('load', () => { const s = sessionStorage.getItem('fc_key'); if (s && WORKER_URL) { document.getElementById('lpass').value = s; doLogin() } });
+
+      async function loadAllBooks() {
+        try {
+          const { data, error } = await window.sb
+            .from('ebooks')
+            .select('*')
+            .order('updated_at', { ascending: false });
+
+          if (error) throw error;
+
+          allBooks = data.map(b => {
+            const d = b.data || {};
+            return {
+              id: b.id,
+              title: b.title || d.title || '未命名',
+              category: b.category || d.category || '',
+              pageCount: d.publishedImages?.length || 0,
+              pageUrls: d.publishedImages || [],
+              coverUrl: d.coverUrl || (d.publishedImages?.[0] || ''),
+              createdAt: b.created_at,
+              updatedAt: b.updated_at,
+              views: d.views || 0,
+              published: b.is_published,
+              publishAt: b.published_at || null,
+              unpublishAt: b.expires_at || null,
+            };
+          });
+
+          render(allBooks);
+          updateMeta();
+        } catch (err) {
+          console.error('載入失敗:', err);
+        }
+      }
+
+      window.addEventListener('load', initBookshelf);
 
       async function loadCatFilter() {
         try {
-          const r = await fetch(`${WORKER_URL}/api/categories`);
-          allCats = await r.json();
+          const { data, error } = await window.sb
+            .from('ebooks')
+            .select('category');
+          if (error) throw error;
+          allCats = [...new Set(data.map(item => item.category).filter(Boolean))];
         } catch { allCats = [] }
         const wrap = document.getElementById('cat-filter-btns');
         if (!allCats.length) { wrap.style.display = 'none'; return }
@@ -1069,14 +1090,22 @@ ${progPct > 0 ? `<div class="prog-bar-wrap" style="margin-top:8px;border-radius:
         document.getElementById('fm').textContent = `${allBooks.length} 本書籍 · FlipCloud`;
       }
 
-      function openB(id, e) { e?.stopPropagation?.(); window.open(`${httpsOrigin()}/?book=${id}`, '_blank') }
+      function openB(id, e) { e?.stopPropagation?.(); window.open(getReaderUrl(id), '_blank') }
       function copyL(id, st, e) {
         e?.stopPropagation?.();
         if (st !== 'pub') { toast('⚠ 此書尚未上架'); return }
-        navigator.clipboard.writeText(`${WORKER_URL}/r/${id}`).then(() => toast('✓ 連結已複製'));
+        const url = `${httpsOrigin()}/index.html?book=${id}`;
+        navigator.clipboard.writeText(url).then(() => toast('✓ 連結已複製'));
       }
 
-      function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2500) }
+      function toast(m, t = 'ok') {
+        const el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = m;
+        el.className = `toast ${t} show`;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), 2500);
+      }
       function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
     </script>
 </body>

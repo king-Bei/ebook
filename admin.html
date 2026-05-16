@@ -4,132 +4,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鑫囍探索旅行 管理後台</title>
+  <title>鑫囍探索旅行 E-BOOK 管理後台</title>
   <link rel="icon" href="favicon.ico">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.VITE_SUPABASE_URL = 'https://kensuper.zeabur.app';
+    window.VITE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc1NTc3NjAwLCJleHAiOjE5MzMzNDQwMDB9.xddouv2QXvL3MR40utvhFnHV8cwNoAz8LZwibMX5esM';
+  </script>
+  <script src="auth.js"></script>
+  <link rel="stylesheet" href="style.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=DM+Mono:wght@300;400&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
 
-    :root {
-      --warm: #c8a96e;
-      --warm2: #a07840;
-      --paper: #f5f0e8;
-      --ink: #1a1208;
-      --bg: #0e0c08;
-      --panel: #14110c;
-      --card: #1c1810;
-      --border: #ffffff0c;
-      --green: #27ae60;
-      --orange: #e67e22;
-      --red: #e74c3c;
-      --gray: #7f8c8d;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0
-    }
-
+    /* Use variables and base styles from style.css */
     body {
-      font-family: 'Noto Serif TC', serif;
       background: var(--bg);
-      color: var(--paper);
       min-height: 100vh;
       display: flex;
-      flex-direction: column
+      flex-direction: column;
     }
 
-    /* LOGIN */
+    /* LOGIN SCREEN REVAMP */
     #login {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      flex: 1
+      background: radial-gradient(circle at center, #1e1a10 0%, #0e0c08 100%);
+      position: relative;
+    }
+    #login::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Ccircle cx='1' cy='1' r='.4' fill='%23fff' fill-opacity='.02'/%3E%3C/svg%3E");
+      pointer-events: none;
     }
 
     .lc {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 44px 40px;
-      width: 340px;
+      background: rgba(28, 24, 16, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(200, 169, 110, 0.2);
+      border-radius: 24px;
+      padding: 50px 40px;
+      width: 360px;
       text-align: center;
-      position: relative
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      animation: loginFadeIn 0.6s ease-out;
     }
 
-    .lc::before {
-      content: '';
-      position: absolute;
-      top: -1px;
-      left: 15%;
-      right: 15%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--warm)44, transparent)
+    @keyframes loginFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .ll {
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: 1.9rem;
-      color: var(--warm);
-      margin-bottom: 4px
+      margin-bottom: 8px;
     }
 
     .ls {
       font-family: 'DM Mono', monospace;
-      font-size: .68rem;
-      color: #ffffff22;
-      letter-spacing: 3px;
+      font-size: 0.7rem;
+      color: var(--warm);
+      letter-spacing: 4px;
       text-transform: uppercase;
-      margin-bottom: 32px
+      opacity: 0.5;
+      margin-bottom: 40px;
     }
 
     .li {
       width: 100%;
-      background: #ffffff08;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--paper);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: #fff;
       font-family: 'DM Mono', monospace;
-      font-size: .9rem;
+      font-size: 1rem;
       outline: none;
-      transition: border-color .2s;
-      margin-bottom: 14px
+      transition: all 0.3s;
+      margin-bottom: 16px;
+      text-align: center;
     }
-
     .li:focus {
-      border-color: var(--warm)55
+      border-color: var(--warm);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 20px rgba(200, 169, 110, 0.1);
     }
 
     .lb {
       width: 100%;
-      padding: 13px;
-      background: linear-gradient(135deg, var(--warm), var(--warm2));
-      color: var(--ink);
+      padding: 14px;
+      background: linear-gradient(135deg, var(--warm), #a07840);
+      color: #1a1208;
       border: none;
       border-radius: 12px;
-      font-family: 'Noto Serif TC', serif;
-      font-size: .9rem;
       font-weight: 700;
+      font-size: 0.95rem;
       cursor: pointer;
-      transition: all .2s
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(200, 169, 110, 0.2);
     }
-
     .lb:hover {
-      transform: translateY(-1px)
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(200, 169, 110, 0.4);
     }
 
     .le {
       font-family: 'DM Mono', monospace;
-      font-size: .72rem;
-      color: var(--red);
-      margin-top: 10px;
-      display: none
+      font-size: 0.75rem;
+      color: #e74c3c;
+      margin-top: 15px;
+      display: none;
     }
 
     /* SHELL */
@@ -984,39 +971,6 @@
       background: #e74c3c33
     }
 
-    /* TOAST */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(16px);
-      padding: 10px 24px;
-      border-radius: 100px;
-      font-family: 'DM Mono', monospace;
-      font-size: .76rem;
-      opacity: 0;
-      transition: all .3s;
-      z-index: 400;
-      pointer-events: none;
-      white-space: nowrap
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0)
-    }
-
-    .toast.ok {
-      background: #1e2e1e;
-      color: #8dcc8d;
-      border: 1px solid #4d7d4d33
-    }
-
-    .toast.er {
-      background: #2e1e1e;
-      color: #cc8d8d;
-      border: 1px solid #7d4d4d33
-    }
 
     /* RESULTS */
     .ritem {
@@ -1088,10 +1042,8 @@
   <div id="shell">
     <div id="tb">
       <div class="tbl"><img src="logo.svg" alt="鑫囍探索旅行" style="height:28px;display:block;"></div>
-      <div class="tbg">管理後台</div>
+      <div class="tbg">管理中心</div>
       <div class="tbs"></div>
-      <a class="tbl2" href="bookshelf.html">← 書架</a>
-      <a class="tbl2" href="index.html" style="margin-left:6px">上傳</a>
       <button class="tbout" onclick="doLogout()">登出</button>
     </div>
 
@@ -1099,12 +1051,18 @@
       <!-- Sidebar -->
       <div id="sb">
         <div class="ns">管理</div>
+        <button class="hbtn pri" onclick="openAdd()" style="width:calc(100% - 30px);margin:10px 15px">+ 新增書籍</button>
         <div class="ni on" id="ni-books" onclick="switchP('books')">
           <svg viewBox="0 0 24 24">
-            <path
-              d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
+            <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
           </svg>
-          所有書籍<span class="nbadge" id="nb-cnt">0</span>
+          管理列表<span class="nbadge" id="nb-cnt">0</span>
+        </div>
+        <div class="ni" id="ni-shelf" onclick="switchP('shelf')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-7v6h5V5h-5z" />
+          </svg>
+          書架模式
         </div>
         <div class="ni" id="ni-upload" onclick="switchP('upload')">
           <svg viewBox="0 0 24 24">
@@ -1167,6 +1125,26 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Books shelf view -->
+        <div id="p-shelf" style="display:none">
+          <div class="ph">
+            <div class="pt">書架檢視</div>
+            <div class="tb-spacer"></div>
+            <div style="font-size: .8rem; color: #ffffff44; display: flex; align-items: center; gap: 12px;">
+               <input id="shelf-search" class="bts" placeholder="搜尋書名…" style="width: 180px; margin: 0;" oninput="renderShelf()">
+               <span>分類：</span>
+               <select id="shelf-cat-filter" class="minp" style="padding: 4px 10px; width: 140px;" onchange="renderShelf()">
+                 <option value="">全部</option>
+               </select>
+            </div>
+          </div>
+          <div class="sec" style="background:transparent; border:none; padding:0;">
+            <div id="shelf-grid">
+               <!-- Cards injected here -->
             </div>
           </div>
         </div>
@@ -1325,7 +1303,7 @@
         <div class="mf" style="margin:0">
           <div class="mlbl"><svg viewBox="0 0 24 24">
               <path
-                d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
+                d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 2 2 2h11c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
             </svg>分類</div>
           <select class="minp" id="m-cat">
             <option value="">— 無分類 —</option>
@@ -1405,7 +1383,8 @@
         <div style="display:flex;gap:8px;align-items:center">
           <input class="minp" type="password" id="m-pass" placeholder="設定密碼（留空 = 不保護）" style="flex:1">
           <div id="m-pass-status"
-            style="font-family:DM Mono,monospace;font-size:.68rem;color:#27ae60;white-space:nowrap;display:none">🔒 已設定
+            style="font-family:DM Mono,monospace;font-size:.68rem;color:#27ae60;white-space:nowrap;display:none">
+            🔒 已設定 <button onclick="removePassword()" style="background:transparent;border:none;color:#e74c3c;cursor:pointer;text-decoration:underline;margin-left:4px">移除</button>
           </div>
         </div>
         <div style="font-family:DM Mono,monospace;font-size:.67rem;color:#ffffff22;margin-top:5px">
@@ -1434,17 +1413,23 @@
       <!-- Re-upload section -->
       <div class="mf">
         <div class="mlbl">
-          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+          </svg>
           重新上傳 PDF (覆蓋內容)
         </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <button class="bbtn rd" onclick="document.getElementById('reupload-input').click()" id="reupload-btn">選擇新 PDF</button>
+          <button class="bbtn rd" onclick="document.getElementById('reupload-input').click()" id="reupload-btn">選擇新
+            PDF</button>
           <span id="reupload-status" style="font-family:DM Mono,monospace;font-size:.7rem;color:#ffffff22">未選擇新檔案</span>
           <input type="file" id="reupload-input" accept=".pdf" style="display:none">
         </div>
         <div id="reupload-prog-wrap" style="display:none;margin-top:10px">
-          <div class="qi-bw"><div class="qi-bf" id="reupload-prog-fill" style="width:0%"></div></div>
-          <div style="font-family:DM Mono,monospace;font-size:.65rem;color:var(--warm);margin-top:5px" id="reupload-prog-label">準備轉換…</div>
+          <div class="qi-bw">
+            <div class="qi-bf" id="reupload-prog-fill" style="width:0%"></div>
+          </div>
+          <div style="font-family:DM Mono,monospace;font-size:.65rem;color:var(--warm);margin-top:5px"
+            id="reupload-prog-label">準備轉換…</div>
         </div>
         <div style="font-family:DM Mono,monospace;font-size:.67rem;color:#ffffff22;margin-top:8px;line-height:1.5">
           上傳新 PDF 將刪除現有所有頁面圖片。建議僅在需要修正內容時使用。
@@ -1477,50 +1462,111 @@
 
     function getReaderUrl(id) {
       const url = new URL('./', location.href);
-      return url.href.replace(/^http:/, 'https:') + '?book=' + id;
+      if (id) url.searchParams.set('book', id);
+      return url.href;
     }
 
     function httpsOrigin() {
-      return location.origin.replace(/^http:/, 'https:');
+      const url = new URL('./', location.href);
+      return url.href.replace(/\/$/, '');
     }
 
-    /* !! CONFIG !! */
-    const WORKER_URL = 'https://flipcloud-api.khuang167.workers.dev'; // ← 填入 Worker 網址
-    const API_KEY = '7f8a3c91e4b2d6a5f0c1d9b8a7e6f5d4c3b2a1e0f9d8c7b6a5e4d3c2b1a0f9e8'; // ← 填入剛產出的 H256 API KEY
+    let allBooks = [], batchFiles = [], uploading = false, delTarget = null, editId = null, isPub = false, passDeleted = false;
 
-    function fullUrl(url) {
-      if (!url) return '';
-      if (url.startsWith('http') || url.startsWith('data:')) return url;
-      return WORKER_URL.replace(/\/$/, '') + (url.startsWith('/') ? url : '/' + url);
+    // 使用 Service Role Key 建立一個具有管理權限的 Supabase Client 以繞過 RLS
+    const ADMIN_SB_URL = 'https://kensuper.zeabur.app';
+    const ADMIN_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzU1Nzc2MDAsImV4cCI6MTkzMzM0NDAwMH0.e5ZHxbcDsKE0GsYxxB8aSyn8SAX5QCNa8FfmKN7Y0mk';
+    window.adminSb = supabase.createClient(ADMIN_SB_URL, ADMIN_SB_KEY);
+
+    async function sha256(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
-
-    let allBooks = [], batchFiles = [], uploading = false, delTarget = null, editId = null, isPub = false;
 
     /* LOGIN */
-    function doLogin() {
-      const k = document.getElementById('lpass').value.trim(); if (!k) return;
-      // 這裡您可以選擇由伺服器驗證 Admin Pass，或是前端簡單檢查
-      fetch(`${WORKER_URL}/api/books`, { headers: { 'X-API-Key': API_KEY, 'X-Admin-Key': k } })
-        .then(r => { if (!r.ok) throw 0; return r.json() })
-        .then(d => {
-          sessionStorage.setItem('fc_admin_pass', k);
-          allBooks = d;
-          document.getElementById('login').style.display = 'none';
-          document.getElementById('shell').style.display = 'flex';
-          renderTbl(); updateStats();
-        })
-        .catch(() => { document.getElementById('lerr').style.display = 'block'; document.getElementById('lpass').value = '' });
+    async function initAdmin() {
+      const user = await window.auth.getCurrentUser();
+      if (user) {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('shell').style.display = 'flex';
+        // 更新 UI 上的使用者名稱
+        const logoutBtn = document.querySelector('.tbout');
+        if (logoutBtn) logoutBtn.innerHTML = `<span>${user.name || '管理員'} 登出</span>`;
+
+        loadAllBooks(); // 從 Supabase 載入資料
+      }
     }
-    function doLogout() { sessionStorage.removeItem('fc_admin_pass'); document.getElementById('login').style.display = 'flex'; document.getElementById('shell').style.display = 'none'; document.getElementById('lpass').value = '' }
-    document.getElementById('lpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
-    window.addEventListener('load', () => { const s = sessionStorage.getItem('fc_admin_pass'); if (s && WORKER_URL) { document.getElementById('lpass').value = s; doLogin() } });
+
+    function doLogout() { window.auth.logout(); }
+
+    window.addEventListener('load', initAdmin);
+
+    async function loadAllBooks() {
+      try {
+        const { data, error } = await window.adminSb
+          .from('ebooks')
+          .select('*')
+          .order('updated_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+               console.log('Database is empty or no data returned.');
+               allBooks = [];
+               renderTbl();
+               return;
+            }
+            // 診斷：顯示欄位資訊
+            if (data[0]) {
+               const cols = Object.keys(data[0]).join(', ');
+               console.log(`📊 Database Columns: ${cols}`);
+            }
+        
+        if (error) throw error;
+
+        // 將 Supabase 資料格式映射回 ebook 格式
+        const mapped = data.map((b, idx) => {
+          let d = b.data || {};
+          if (typeof d === 'string') {
+            try { d = JSON.parse(d); } catch (e) { d = {}; }
+          }
+          const pageUrls = b.images || b.pages || d.publishedImages || d.pages || d.images || d.pageUrls || [];
+          return {
+            id: b.id,
+            raw: b, // 保存原始資料
+            title: b.title || d.title || '未命名',
+            category: b.category || d.category || '',
+            pageCount: pageUrls.length,
+            pageUrls: pageUrls,
+            coverUrl: d.coverUrl || pageUrls[0] || '',
+            createdAt: b.created_at,
+            updatedAt: b.updated_at,
+            views: d.views || 0,
+            published: d.isPublished ?? b.is_published ?? false,
+            publishAt: d.publishedAt || b.published_at || null,
+            unpublishAt: d.expiresAt || b.expires_at || null,
+            notes: d.notes || '',
+            hasPassword: !!d.passwordHash
+          };
+        });
+
+        allBooks = mapped;
+        renderTbl();
+        updateStats();
+      } catch (err) {
+        console.error('載入書籍失敗:', err);
+        toast('⚠ 載入失敗', 'er');
+      }
+    }
+
+
 
     /* NAV */
     function switchP(p) {
-      ['books', 'upload', 'stats', 'cats'].forEach(x => {
-        document.getElementById(`p-${x}`)?.style && (document.getElementById(`p-${x}`).style.display = x === p ? '' : 'none');
+      ['books', 'shelf', 'upload', 'stats', 'cats'].forEach(x => {
+        const el = document.getElementById(`p-${x}`);
+        if (el) el.style.display = (x === p ? '' : 'none');
         document.getElementById(`ni-${x}`)?.classList.toggle('on', x === p);
       });
+      if (p === 'shelf') renderShelf();
       if (p === 'cats') loadCats();
     }
 
@@ -1565,6 +1611,57 @@
       renderTbl(q ? allBooks.filter(b => b.title.toLowerCase().includes(q) || b.id.includes(q)) : allBooks);
     }
 
+    /* SHELF */
+    function renderShelf() {
+      const q = document.getElementById('shelf-search').value.trim().toLowerCase();
+      const cat = document.getElementById('shelf-cat-filter').value;
+      const grid = document.getElementById('shelf-grid');
+      grid.innerHTML = '';
+
+      let list = cat ? allBooks.filter(b => b.category === cat) : allBooks;
+      if (q) list = list.filter(b => b.title.toLowerCase().includes(q) || b.id.includes(q));
+      
+      // Update category filter options if needed (only once or when list changes)
+      const catSel = document.getElementById('shelf-cat-filter');
+      const currentCats = [...new Set(allBooks.map(b => b.category).filter(Boolean))];
+      const existing = Array.from(catSel.options).map(o => o.value);
+      currentCats.forEach(c => {
+        if (!existing.includes(c)) {
+          const opt = document.createElement('option');
+          opt.value = opt.textContent = c;
+          catSel.appendChild(opt);
+        }
+      });
+
+      if (!list.length) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:60px; color:#ffffff22;">尚無書籍</div>';
+        return;
+      }
+
+      list.forEach(b => {
+        const st = bkStatus(b);
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.onclick = () => openB(b.id);
+        
+        card.innerHTML = `
+          <div class="card-cover">
+            ${b.coverUrl ? `<img src="${b.coverUrl}" loading="lazy">` : `<div class="cph"><div class="cph-o">📖</div><div class="cph-t">${esc(b.title)}</div></div>`}
+            <div class="card-badge">${b.pageCount}P</div>
+            <div class="card-status ${st}">${SLBL[st]}</div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">${esc(b.title)}</div>
+            <div class="card-meta">
+              <span>${b.category || '未分類'}</span>
+              <span>${new Date(b.createdAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
     function openB(id) { window.open(getReaderUrl(id), '_blank') }
     function copyL(id, st) {
       if (st !== 'pub') { toast('⚠ 此書尚未上架，短連結不可用', 'er'); return }
@@ -1576,7 +1673,7 @@
 
     function openEdit(id) {
       const b = allBooks.find(x => x.id === id); if (!b) return;
-      editId = id; isPub = b.published || false; pendingCoverDataUrl = null;
+      editId = id; isPub = b.published || false; pendingCoverDataUrl = null; passDeleted = false;
       document.getElementById('m-title').value = b.title || '';
       document.getElementById('m-notes').value = b.notes || '';
       document.getElementById('m-cat').value = b.category || '';
@@ -1589,7 +1686,7 @@
       // Cover preview
       const prev = document.getElementById('cover-preview');
       const delBtn = document.getElementById('cover-del-btn');
-      
+
       // 更新封面預覽，但不移除 input
       let visual = prev.querySelector('.cv-img');
       if (b.coverUrl) {
@@ -1600,7 +1697,7 @@
           visual.style.cssText = 'width:100%;height:100%;object-fit:cover';
           prev.insertBefore(visual, prev.firstChild);
         }
-        visual.src = fullUrl(b.coverUrl);
+        visual.src = b.coverUrl;
         delBtn.style.display = '';
       } else {
         visual?.remove();
@@ -1615,10 +1712,10 @@
 
       // Embed code (only if published)
       const embedWrap = document.getElementById('m-embed-wrap');
-      if (b.published && WORKER_URL) {
+      if (b.published) {
         embedWrap.style.display = '';
         document.getElementById('m-embed-code').textContent =
-          `<iframe src="${httpsOrigin()}/?book=${id}&embed=1" width="860" height="640" frameborder="0" allowfullscreen style="border-radius:12px"></iframe>`;
+          `<iframe src="${getReaderUrl(id)}&embed=1" width="860" height="640" frameborder="0" allowfullscreen style="border-radius:12px"></iframe>`;
       } else {
         embedWrap.style.display = 'none';
       }
@@ -1626,6 +1723,31 @@
       loadCatSelect();
       document.getElementById('modal').classList.add('open');
       // Reset reupload
+      reuploadPages = null;
+      document.getElementById('reupload-status').textContent = '未選擇新檔案';
+      document.getElementById('reupload-prog-wrap').style.display = 'none';
+    }
+
+    function openAdd() {
+      editId = null; isPub = false; pendingCoverDataUrl = null; passDeleted = false;
+      document.getElementById('mt').textContent = '新增書籍';
+      document.getElementById('m-title').value = '';
+      document.getElementById('m-notes').value = '';
+      document.getElementById('m-cat').value = '';
+      document.getElementById('m-pat').value = '';
+      document.getElementById('m-uat').value = '';
+      document.getElementById('m-pass').value = '';
+      document.getElementById('m-pass-status').style.display = 'none';
+      
+      const prev = document.getElementById('cover-preview');
+      prev.innerHTML = '<span style="font-size:1.2rem;opacity:.3">🖼</span><input type="file" id="cover-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer">';
+      document.getElementById('cover-del-btn').style.display = 'none';
+      document.getElementById('m-embed-wrap').style.display = 'none';
+      
+      updateToggle(false);
+      loadCatSelect();
+      document.getElementById('modal').classList.add('open');
+      
       reuploadPages = null;
       document.getElementById('reupload-status').textContent = '未選擇新檔案';
       document.getElementById('reupload-prog-wrap').style.display = 'none';
@@ -1645,8 +1767,15 @@
       document.getElementById('ptog-lbl').textContent = on ? '已上架 — 公開可見' : '未上架 — 不公開';
     }
 
-    function closeModal() { 
-      document.getElementById('modal').classList.remove('open'); 
+    function removePassword() {
+      if (confirm('確定要移除此書籍的閱讀密碼嗎？儲存後生效。')) {
+        passDeleted = true;
+        document.getElementById('m-pass-status').style.display = 'none';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
       editId = null; pendingCoverDataUrl = null; reuploadPages = null;
       document.getElementById('reupload-status').textContent = '未選擇新檔案';
       document.getElementById('reupload-prog-wrap').style.display = 'none';
@@ -1659,13 +1788,13 @@
       const progWrap = document.getElementById('reupload-prog-wrap');
       const fill = document.getElementById('reupload-prog-fill');
       const label = document.getElementById('reupload-prog-label');
-      
+
       reuploadPages = null;
       status.textContent = file.name;
       progWrap.style.display = 'block';
       fill.style.width = '0%';
       label.textContent = '準備轉換 PDF…';
-      
+
       convertPDF(file, (p, total) => {
         fill.style.width = (p / total * 100) + '%';
         label.textContent = `正在轉換頁面 ${p} / ${total}…`;
@@ -1685,61 +1814,60 @@
       saveBtn.disabled = true;
       saveBtn.textContent = '正在儲存…';
 
-      const payload = {
-        title: document.getElementById('m-title').value.trim(),
-        notes: document.getElementById('m-notes').value,
-        category: document.getElementById('m-cat').value,
-        published: isPub,
-        publishAt: toISO(document.getElementById('m-pat').value),
-        unpublishAt: toISO(document.getElementById('m-uat').value),
-      };
-      // Overwrite pages if selected
-      if (reuploadPages) {
-        payload.pages = reuploadPages;
-        document.getElementById('reupload-prog-label').textContent = '正在上傳頁面圖片至雲端 (請勿關閉)…';
-      }
-
-      // Only include password if field has a value (empty = remove password)
-      const pw = document.getElementById('m-pass').value;
-      if (pw !== undefined) payload.password = pw; 
-      
       try {
-        const r = await fetch(`${WORKER_URL}/api/book/${editId}`, {
-          method: 'PATCH', headers: { 
-            'Content-Type': 'application/json', 
-            'X-API-Key': API_KEY,
-            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!r.ok) throw 0;
-        const { book } = await r.json();
-        const i = allBooks.findIndex(b => b.id === editId);
-        if (i >= 0) allBooks[i] = { ...allBooks[i], ...book };
+        const user = await window.auth.getCurrentUser();
+        const now = new Date().toISOString();
+        const b = allBooks.find(x => x.id === editId);
 
-        // Upload pending cover if any
-        if (pendingCoverDataUrl) {
-          const method = pendingCoverDataUrl === 'REMOVE' ? 'DELETE' : 'POST';
-          const body = pendingCoverDataUrl === 'REMOVE' ? null : JSON.stringify({ image: pendingCoverDataUrl });
-
-          const cr = await fetch(`${WORKER_URL}/api/book/${editId}/cover`, {
-            method: method,
-            headers: { 
-              'Content-Type': 'application/json', 
-              'X-API-Key': API_KEY,
-              'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-            },
-            body: body,
-          });
-          if (cr.ok) {
-            const cd = await cr.json();
-            if (i >= 0) allBooks[i].coverUrl = cd.coverUrl || null;
+        // 準備更新的資料 (僅保留確定存在的根欄位)
+        // 準備更新的資料 (根據診斷結果，同步更新根欄位)
+        const updates = {
+          title: document.getElementById('m-title').value.trim(),
+          category: document.getElementById('m-cat').value,
+          status: isPub ? '已發佈' : (b.status || '待製作'),
+          last_modified_by: user?.name || 'Admin',
+          updated_at: now,
+          data: {
+            ... (b.raw?.data || {}),
+            title: document.getElementById('m-title').value.trim(),
+            notes: document.getElementById('m-notes').value,
+            category: document.getElementById('m-cat').value,
+            isPublished: isPub,
+            expiresAt: toISO(document.getElementById('m-uat').value),
+            publishedAt: toISO(document.getElementById('m-pat').value),
+            passwordHash: document.getElementById('m-pass').value ? await sha256(document.getElementById('m-pass').value) : (passDeleted ? null : (b.raw?.data?.passwordHash || null))
           }
+        };
+
+        const { data, error } = await window.adminSb
+          .from('ebooks')
+          .update(updates)
+          .eq('id', editId)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // 更新本地列表
+        const i = allBooks.findIndex(x => x.id === editId);
+        if (i >= 0) {
+          const d = updates.data;
+          allBooks[i] = {
+            ...allBooks[i],
+            title: d.title,
+            published: d.isPublished,
+            publishAt: d.publishedAt,
+            unpublishAt: d.expiresAt,
+            category: updates.category,
+            notes: d.notes,
+            hasPassword: !!d.passwordHash
+          };
         }
 
         renderTbl(); updateStats(); closeModal();
         toast('✓ 書籍已更新', 'ok');
-      } catch { 
+      } catch (err) {
+        console.error('Save error:', err);
         toast('⚠ 儲存失敗', 'er');
       } finally {
         saveBtn.disabled = false;
@@ -1757,19 +1885,32 @@
     function closeConf() { document.getElementById('conf').classList.remove('open'); delTarget = null }
     async function doDel() {
       const target = delTarget;
-      if (!target) return; closeConf();
+      if (!target) return;
+      closeConf();
+      toast('⏳ 正在同步刪除資料庫與雲端檔案...', 'ok');
       try {
-        const r = await fetch(`${WORKER_URL}/api/book/${target}`, { 
-          method: 'DELETE', 
-          headers: { 
-            'X-API-Key': API_KEY,
-            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-          } 
-        });
-        if (!r.ok) throw 0;
+        const { error: dbErr } = await window.adminSb
+          .from('ebooks')
+          .delete()
+          .eq('id', target);
+        if (dbErr) throw dbErr;
+
+        // 刪除 Storage 中的檔案 (brochures bucket)
+        const pathsToClean = [`ebooks/${target}`, `ebooks/ebooks/${target}`, `brochures/${target}`, `${target}`];
+        for (const dir of pathsToClean) {
+          const { data: files, error: listErr } = await window.adminSb.storage.from('brochures').list(dir);
+          if (!listErr && files && files.length > 0) {
+            const filesToRemove = files.map(f => `${dir}/${f.name}`);
+            await window.adminSb.storage.from('brochures').remove(filesToRemove);
+          }
+        }
+
         allBooks = allBooks.filter(b => b.id !== target);
-        renderTbl(); updateStats(); toast('✓ 書籍已刪除', 'ok');
-      } catch { toast('⚠ 刪除失敗', 'er') }
+        renderTbl(); updateStats(); toast('✅ 書籍與檔案已全數刪除', 'ok');
+      } catch (err) {
+        console.error('Delete error:', err);
+        toast('⚠ 刪除失敗', 'er');
+      }
       delTarget = null;
     }
 
@@ -1823,11 +1964,24 @@
     let allCats = [];
 
     async function loadCats() {
-      try { const r = await fetch(`${WORKER_URL}/api/categories`); allCats = await r.json(); renderCats(); } catch { }
+      try {
+        const { data, error } = await window.adminSb
+          .from('ebooks')
+          .select('category');
+        if (error) throw error;
+        allCats = [...new Set(data.map(item => item.category).filter(Boolean))];
+        renderCats();
+      } catch (err) { console.error('Load cats error:', err); }
     }
 
     async function loadCatSelect() {
-      try { const r = await fetch(`${WORKER_URL}/api/categories`); allCats = await r.json(); } catch { }
+      try {
+        const { data, error } = await window.adminSb
+          .from('ebooks')
+          .select('category');
+        if (error) throw error;
+        allCats = [...new Set(data.map(item => item.category).filter(Boolean))];
+      } catch (err) { console.error('Load cat select error:', err); }
       const sel = document.getElementById('m-cat');
       const cur = sel.value;
       sel.innerHTML = '<option value="">— 無分類 —</option>';
@@ -1849,39 +2003,11 @@
     }
 
     async function addCat() {
-      const inp = document.getElementById('cat-inp');
-      const name = inp.value.trim(); if (!name) return;
-      try {
-        const r = await fetch(`${WORKER_URL}/api/categories`, { 
-          method: 'POST', 
-          headers: { 
-            'Content-Type': 'application/json', 
-            'X-API-Key': API_KEY,
-            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-          }, 
-          body: JSON.stringify({ name }) 
-        });
-        if (!r.ok) throw 0;
-        const d = await r.json(); allCats = d.categories; renderCats(); inp.value = '';
-        toast('✓ 分類已新增', 'ok');
-      } catch { toast('⚠ 新增失敗', 'er') }
+      toast('💡 請直接在書籍編輯視窗輸入新分類並儲存', 'ok');
     }
 
     async function delCat(name) {
-      try {
-        const r = await fetch(`${WORKER_URL}/api/categories`, { 
-          method: 'DELETE', 
-          headers: { 
-            'Content-Type': 'application/json', 
-            'X-API-Key': API_KEY,
-            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-          }, 
-          body: JSON.stringify({ name }) 
-        });
-        if (!r.ok) throw 0;
-        const d = await r.json(); allCats = d.categories; renderCats();
-        toast('✓ 分類已刪除', 'ok');
-      } catch { toast('⚠ 刪除失敗', 'er') }
+      toast('💡 分類隨書籍自動管理，無需手動刪除', 'ok');
     }
 
     /* STATS */
@@ -1904,7 +2030,12 @@
       const sel = document.getElementById('stat-book-sel');
       if (sel) {
         sel.innerHTML = '<option value="">選擇書籍…</option>';
-        allBooks.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.title.slice(0, 30); sel.appendChild(o) });
+        allBooks.forEach(b => { 
+          const o = document.createElement('option'); 
+          o.value = b.id; 
+          o.textContent = (b.title || '未命名').slice(0, 30); 
+          sel.appendChild(o); 
+        });
       }
     }
 
@@ -1912,22 +2043,21 @@
       if (!id) { document.getElementById('stat-book-detail').style.display = 'none'; document.getElementById('stat-book-empty').style.display = ''; return; }
       document.getElementById('stat-book-empty').style.display = 'none';
       try {
-        const r = await fetch(`${WORKER_URL}/api/book/${id}/stats`, { 
-          headers: { 
-            'X-API-Key': API_KEY,
-            'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-          } 
-        });
-        if (!r.ok) throw 0;
-        const s = await r.json();
-        document.getElementById('bs-views').textContent = s.totalViews.toLocaleString();
-        const mins = Math.round(s.totalReadTime / 60);
-        document.getElementById('bs-time').textContent = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
-        const avg = s.totalViews > 0 ? Math.round(s.totalReadTime / s.totalViews) : 0;
-        document.getElementById('bs-avg').textContent = avg >= 60 ? `${Math.floor(avg / 60)}m ${avg % 60}s` : `${avg}s`;
+        const b = allBooks.find(x => x.id === id);
+        if (!b) throw new Error('找不到書籍');
+        
+        document.getElementById('bs-views').textContent = (b.views || 0).toLocaleString();
+        document.getElementById('bs-time').textContent = '--';
+        document.getElementById('bs-avg').textContent = '--';
         document.getElementById('stat-book-detail').style.display = '';
-        drawChart(s.daily);
-      } catch { document.getElementById('stat-book-empty').textContent = '載入失敗'; document.getElementById('stat-book-empty').style.display = ''; }
+        
+        // 暫時隱藏詳細趨勢圖
+        const canvas = document.getElementById('stat-chart');
+        if (canvas) canvas.style.display = 'none';
+      } catch (err) { 
+        document.getElementById('stat-book-empty').textContent = '載入失敗: ' + (err.message || '未知錯誤'); 
+        document.getElementById('stat-book-empty').style.display = ''; 
+      }
     }
 
     function drawChart(daily) {
@@ -2003,7 +2133,7 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
       btn.classList.toggle('vis', batchFiles.length > 0 && !uploading);
     }
 
-    /* Smart compression: target ~100KB per page */
+    /* Smart compression */
     async function convertPDF(file, onP) {
       const ab = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
@@ -2015,8 +2145,8 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
       const vp1 = pg1.getViewport({ scale: 1 });
       const aspect = vp1.width / vp1.height;
 
-      // Target: max 1600px on longest side for high quality web viewing
-      const MAX_PX = 1600;
+      // Target: max 1200px on longest side for mobile-optimized PNG
+      const MAX_PX = 1200;
       let scale;
       if (aspect >= 1) {
         scale = MAX_PX / vp1.width;
@@ -2032,29 +2162,23 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
         const cv = document.createElement('canvas');
         cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
         const ctx = cv.getContext('2d');
-        
+
         // Ensure white background (fix transparency issues)
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, cv.width, cv.height);
-        
+
         // High quality rendering hints
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        
-        await pg.render({ 
-          canvasContext: ctx, 
+
+        await pg.render({
+          canvasContext: ctx,
           viewport: vp,
           intent: 'print' // Use print intent for better text rendering
         }).promise;
 
-        // Adaptive quality: target ~120-180KB per page
-        let dataUrl = cv.toDataURL('image/jpeg', 0.85);
-        let sz = Math.round(dataUrl.length * 0.75);
-        
-        if (sz > 220000) dataUrl = cv.toDataURL('image/jpeg', 0.75);
-        sz = Math.round(dataUrl.length * 0.75);
-        if (sz > 350000) dataUrl = cv.toDataURL('image/jpeg', 0.6);
-
+        // 使用 PNG 格式，並針對手機優化解析度
+        const dataUrl = cv.toDataURL('image/png');
         pages.push(dataUrl);
         onP(i, n);
       }
@@ -2062,7 +2186,6 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
     }
 
     async function startUpload() {
-      if (!WORKER_URL) { toast('⚠ 尚未設定 WORKER_URL', 'er'); return }
       if (uploading) return;
       uploading = true;
       document.getElementById('startbtn').disabled = true;
@@ -2081,28 +2204,82 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
             document.getElementById(`qb${i}`).style.width = (p / total * 50) + '%';
           });
 
-          document.getElementById(`qs${i}`).textContent = '上傳至雲端…';
+          document.getElementById(`qs${i}`).textContent = '上傳至 Supabase…';
           document.getElementById(`qb${i}`).style.width = '60%';
 
           const title = item.file.name.replace(/\.pdf$/i, '');
-          const r = await fetch(`${WORKER_URL}/api/upload`, {
-            method: 'POST', 
-            headers: { 
-              'Content-Type': 'application/json', 
-              'X-API-Key': API_KEY,
-              'X-Admin-Key': sessionStorage.getItem('fc_admin_pass')
-            },
-            body: JSON.stringify({ title, pages }),
+          const bookId = randomId();
+          const pageUrls = [];
+
+          // 上傳每一頁到 Storage
+          for (let p = 0; p < pages.length; p++) {
+            const b64 = pages[p].split(',')[1];
+            const byteCharacters = atob(b64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let k = 0; k < byteCharacters.length; k++) {
+              byteNumbers[k] = byteCharacters.charCodeAt(k);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+            const filePath = `ebooks/${bookId}/page_${String(p + 1).padStart(3, '0')}.jpg`;
+            const { data: uploadData, error: uploadError } = await window.adminSb.storage
+              .from('brochures')
+              .upload(filePath, blob);
+
+            if (uploadError) throw uploadError;
+
+            // 取得公開網址
+            const { data: { publicUrl } } = window.adminSb.storage
+              .from('brochures')
+              .getPublicUrl(filePath);
+
+            pageUrls.push(publicUrl);
+            document.getElementById(`qb${i}`).style.width = (60 + (p / pages.length * 35)) + '%';
+          }
+
+          // 寫入電子書資料庫 (ebooks 表)
+          const now = new Date().toISOString();
+          const user = await window.auth.getCurrentUser();
+          const { error: dbError } = await window.adminSb.from('ebooks').insert({
+            id: bookId,
+            title: title,
+            created_at: now,
+            updated_at: now,
+            last_modified_by: user?.name || 'Admin',
+            category: '',
+            status: '已發佈',
+            data: {
+              publishedImages: pageUrls,
+              pageCount: pageUrls.length,
+              notes: '',
+              isPublished: true,
+              expiresAt: '',
+              publishedAt: now
+            }
           });
-          if (!r.ok) throw 0;
-          const data = await r.json();
 
-          item.status = 'done'; item.id = data.id;
+          if (dbError) throw dbError;
+
+          // 移除舊的 brochures 表關聯更新，避免 400 錯誤
+
+          item.status = 'done'; item.id = bookId;
           document.getElementById(`qb${i}`).style.width = '100%';
-          results.push({ title, id: data.id });
-          allBooks.unshift({ id: data.id, title, pageCount: pages.length, createdAt: new Date().toISOString(), published: false, views: 0 });
+          results.push({ title, id: bookId });
 
-        } catch { item.status = 'error' }
+          allBooks.unshift({
+            id: bookId,
+            title,
+            pageCount: pageUrls.length,
+            createdAt: now,
+            published: false,
+            views: 0
+          });
+
+        } catch (err) {
+          console.error('Upload error:', err);
+          item.status = 'error';
+        }
         renderQ();
       }
 
@@ -2133,6 +2310,10 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
     document.getElementById('reupload-input').addEventListener('change', handleReuploadSelect);
 
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+    function randomId(len = 6) {
+      const c = 'abcdefghijkmnpqrstuvwxyz23456789';
+      return Array.from(crypto.getRandomValues(new Uint8Array(len))).map(b => c[b % c.length]).join('');
+    }
   </script>
 </body>
 
