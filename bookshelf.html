@@ -7,10 +7,7 @@
   <title>鑫囍探索旅行 目錄</title>
   <link rel="icon" href="favicon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    window.VITE_SUPABASE_URL = 'https://kensuper.zeabur.app';
-    window.VITE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc1NTc3NjAwLCJleHAiOjE5MzMzNDQwMDB9.xddouv2QXvL3MR40utvhFnHV8cwNoAz8LZwibMX5esM';
-  </script>
+  <script src="config.js"></script>
   <script src="auth.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
@@ -92,7 +89,7 @@
     .l-sub {
       font-family: 'DM Mono', monospace;
       font-size: .68rem;
-      color: #ffffff22;
+      color: rgba(255, 255, 255, 0.45);
       letter-spacing: 3px;
       text-transform: uppercase;
       margin-bottom: 32px
@@ -100,7 +97,7 @@
 
     .l-lbl {
       font-size: .8rem;
-      color: #ffffff44;
+      color: rgba(255, 255, 255, 0.65);
       text-align: left;
       margin-bottom: 8px
     }
@@ -253,7 +250,7 @@
     .hero-s {
       font-family: 'DM Mono', monospace;
       font-size: .72rem;
-      color: #ffffff2a;
+      color: rgba(255, 255, 255, 0.55);
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-top: 10px
@@ -312,7 +309,7 @@
     }
 
     .sinp::placeholder {
-      color: #ffffff1a
+      color: rgba(255, 255, 255, 0.28)
     }
 
     .ssel {
@@ -405,7 +402,7 @@
       font-size: .67rem;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: #ffffff1a;
+      color: rgba(255, 255, 255, 0.4);
       margin-bottom: 16px;
       padding-bottom: 8px;
       border-bottom: 1px solid var(--border)
@@ -642,13 +639,13 @@
     .cpg {
       font-family: 'DM Mono', monospace;
       font-size: .66rem;
-      color: #ffffff2a
+      color: rgba(255, 255, 255, 0.5)
     }
 
     .cdt {
       font-family: 'DM Mono', monospace;
       font-size: .64rem;
-      color: #ffffff1a
+      color: rgba(255, 255, 255, 0.35)
     }
 
     .cacts {
@@ -969,6 +966,10 @@
             .order('updated_at', { ascending: false });
 
           if (error) throw error;
+          if (!data || data.length === 0) {
+            location.href = 'admin.html';
+            return;
+          }
 
           allBooks = data.map(b => {
             const d = b.data || {};

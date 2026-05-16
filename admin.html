@@ -8,10 +8,7 @@
   <link rel="icon" href="favicon.ico">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    window.VITE_SUPABASE_URL = 'https://kensuper.zeabur.app';
-    window.VITE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc1NTc3NjAwLCJleHAiOjE5MzMzNDQwMDB9.xddouv2QXvL3MR40utvhFnHV8cwNoAz8LZwibMX5esM';
-  </script>
+  <script src="config.js"></script>
   <script src="auth.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
@@ -514,15 +511,15 @@
     .bts {
       flex: 1;
       max-width: 240px;
-      background: #ffffff07;
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(200, 169, 110, 0.2);
       border-radius: 9px;
       padding: 8px 13px;
       color: var(--paper);
       font-family: 'DM Mono', monospace;
       font-size: .77rem;
       outline: none;
-      transition: border-color .2s
+      transition: all .2s
     }
 
     .bts:focus {
@@ -530,7 +527,7 @@
     }
 
     .bts::placeholder {
-      color: #ffffff1a
+      color: rgba(255, 255, 255, 0.25)
     }
 
     .bcnt {
@@ -549,10 +546,10 @@
       padding: 9px 12px;
       text-align: left;
       font-family: 'DM Mono', monospace;
-      font-size: .65rem;
+      font-size: .72rem;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #ffffff1a;
+      color: rgba(255, 255, 255, 0.5);
       border-bottom: 1px solid var(--border);
       white-space: nowrap
     }
@@ -568,32 +565,32 @@
     }
 
     .btbl tr:hover td {
-      background: #ffffff03
+      background: rgba(255, 255, 255, 0.05)
     }
 
     .bt-ttl {
-      font-size: .84rem;
+      font-size: .92rem;
       color: var(--paper)
     }
 
     .bt-id {
       font-family: 'DM Mono', monospace;
-      font-size: .7rem;
+      font-size: .78rem;
       color: var(--warm);
-      opacity: .6
+      opacity: .8
     }
 
     .bt-pg {
       font-family: 'DM Mono', monospace;
-      font-size: .7rem;
-      color: #ffffff2a;
+      font-size: .78rem;
+      color: rgba(255, 255, 255, 0.5);
       white-space: nowrap
     }
 
     .bt-dt {
       font-family: 'DM Mono', monospace;
-      font-size: .68rem;
-      color: #ffffff1a;
+      font-size: .75rem;
+      color: rgba(255, 255, 255, 0.4);
       white-space: nowrap
     }
 
@@ -644,7 +641,7 @@
       padding: 5px 11px;
       border-radius: 7px;
       border: 1px solid var(--border);
-      background: transparent;
+      background: rgba(255, 255, 255, 0.04);
       font-family: 'DM Mono', monospace;
       font-size: .67rem;
       cursor: pointer;
@@ -681,7 +678,7 @@
 
     .bbtn.dl {
       color: var(--red);
-      opacity: .5
+      opacity: .7
     }
 
     .bbtn.dl:hover {
@@ -1474,8 +1471,8 @@
     let allBooks = [], batchFiles = [], uploading = false, delTarget = null, editId = null, isPub = false, passDeleted = false;
 
     // 使用 Service Role Key 建立一個具有管理權限的 Supabase Client 以繞過 RLS
-    const ADMIN_SB_URL = 'https://kensuper.zeabur.app';
-    const ADMIN_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzU1Nzc2MDAsImV4cCI6MTkzMzM0NDAwMH0.e5ZHxbcDsKE0GsYxxB8aSyn8SAX5QCNa8FfmKN7Y0mk';
+    const ADMIN_SB_URL = window.VITE_SUPABASE_URL;
+    const ADMIN_SB_KEY = window.VITE_SERVICE_ROLE_KEY;
     window.adminSb = supabase.createClient(ADMIN_SB_URL, ADMIN_SB_KEY);
 
     async function sha256(text) {

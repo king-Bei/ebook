@@ -10,10 +10,7 @@
   <meta property="og:image" content="logo.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    window.VITE_SUPABASE_URL = 'https://kensuper.zeabur.app';
-    window.VITE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc1NTc3NjAwLCJleHAiOjE5MzMzNDQwMDB9.xddouv2QXvL3MR40utvhFnHV8cwNoAz8LZwibMX5esM';
-  </script>
+  <script src="config.js"></script>
   <script src="auth.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
@@ -63,7 +60,7 @@
     .uv-sub {
       font-family: 'DM Mono', monospace;
       font-size: .82rem;
-      color: #ffffff33;
+      color: rgba(255, 255, 255, 0.55);
       max-width: 320px;
       line-height: 1.6;
     }
@@ -123,7 +120,7 @@
     .rd-text {
       font-family: 'DM Mono', monospace;
       font-size: .75rem;
-      color: #ffffff66;
+      color: rgba(255, 255, 255, 0.75);
     }
 
     .rd-text strong {
@@ -201,7 +198,7 @@
 
     .tb-book-title {
       font-size: .85rem;
-      color: #ffffff77;
+      color: rgba(255, 255, 255, 0.75);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -233,7 +230,7 @@
       border-radius: 8px;
       border: none;
       background: transparent;
-      color: #ffffff77;
+      color: rgba(255, 255, 255, 0.7);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -363,7 +360,7 @@
       font-size: .68rem;
       letter-spacing: 1px;
       text-transform: uppercase;
-      color: #ffffff44;
+      color: rgba(255, 255, 255, 0.65);
       border: none;
       background: transparent;
       cursor: pointer;
@@ -456,13 +453,13 @@
     .toc-page {
       font-family: 'DM Mono', monospace;
       font-size: .68rem;
-      color: #ffffff44;
+      color: rgba(255, 255, 255, 0.55);
       min-width: 28px;
     }
 
     .toc-label {
       font-size: .82rem;
-      color: #ffffff88;
+      color: rgba(255, 255, 255, 0.85);
     }
 
     .toc-item.current .toc-label {
@@ -1464,10 +1461,8 @@
 
       // 只有在真的沒有參數時才跳轉
       if (!location.search.includes('book=')) {
-        console.warn('No valid book parameter found. Redirecting to bookshelf.html...');
-        setTimeout(() => {
-          window.location.href = 'bookshelf.html';
-        }, 500); // 稍微延遲以利觀察日誌
+        console.warn('No valid book parameter found. Redirecting to admin.html...');
+        window.location.href = 'admin.html';
       } else {
         console.error('Book parameter exists in URL but failed to parse:', location.search);
         alert('連結格式錯誤，請重新從後台複製。');
@@ -1582,7 +1577,8 @@
 
       } catch (e) {
         console.error('Load error:', e);
-        alert('載入失敗: ' + e.message + '\nID: ' + id);
+        // 如果載入失敗（如找不到書目），直接轉往管理中心
+        window.location.href = 'admin.html';
       }
     }
 
