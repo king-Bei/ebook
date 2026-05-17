@@ -2174,8 +2174,16 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
           intent: 'print' // Use print intent for better text rendering
         }).promise;
 
-        // 使用 PNG 格式，並針對手機優化解析度
-        const dataUrl = cv.toDataURL('image/png');
+        // 使用 WebP 格式並優化解析度與品質 (0.85)，並帶有 JPEG 退路相容性
+        let dataUrl;
+        try {
+          dataUrl = cv.toDataURL('image/webp', 0.85);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            throw new Error('Not supported');
+          }
+        } catch (e) {
+          dataUrl = cv.toDataURL('image/jpeg', 0.85);
+        }
         pages.push(dataUrl);
         onP(i, n);
       }
@@ -2210,19 +2218,33 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
 
           // 上傳每一頁到 Storage
           for (let p = 0; p < pages.length; p++) {
-            const b64 = pages[p].split(',')[1];
+            const matches = pages[p].match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+            if (!matches || matches.length !== 3) {
+              throw new Error(`第 ${p + 1} 頁的圖片格式不正確`);
+            }
+            const mimeType = matches[1];
+            const b64 = matches[2].replace(/\s/g, '');
+
             const byteCharacters = atob(b64);
             const byteNumbers = new Array(byteCharacters.length);
             for (let k = 0; k < byteCharacters.length; k++) {
               byteNumbers[k] = byteCharacters.charCodeAt(k);
             }
             const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'image/jpeg' });
+            const blob = new Blob([byteArray], { type: mimeType });
 
-            const filePath = `ebooks/${bookId}/page_${String(p + 1).padStart(3, '0')}.jpg`;
+            let ext = 'jpg';
+            if (mimeType.includes('webp')) ext = 'webp';
+            else if (mimeType.includes('png')) ext = 'png';
+
+            const filePath = `ebooks/${bookId}/page_${String(p + 1).padStart(3, '0')}.${ext}`;
             const { data: uploadData, error: uploadError } = await window.adminSb.storage
               .from('brochures')
-              .upload(filePath, blob);
+              .upload(filePath, blob, {
+                contentType: mimeType,
+                cacheControl: '31536000',
+                upsert: true
+              });
 
             if (uploadError) throw uploadError;
 
