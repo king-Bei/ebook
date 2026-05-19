@@ -1434,6 +1434,7 @@
       </div>
 
       <div class="mbrow">
+        <button class="mbtn prev" id="modal-preview-btn" onclick="previewCurrent()" style="margin-right:auto;background:#c8a96e1a;border:1px solid #c8a96e33;color:var(--warm)">預覽此書</button>
         <button class="mbtn cancel" onclick="closeModal()">取消</button>
         <button class="mbtn save" onclick="saveModal()">儲存</button>
       </div>
@@ -1587,6 +1588,10 @@
       list.forEach(b => {
         const st = bkStatus(b), dt = new Date(b.createdAt).toLocaleDateString('zh-TW');
         const tr = document.createElement('tr');
+        const readBtnHtml = (st === 'pub')
+          ? `<button class="bbtn rd" onclick="openB('${b.id}')">閱讀</button>`
+          : `<button class="bbtn rd" onclick="previewB('${b.id}')" style="background:#c8a96e1a;border:1px solid #c8a96e33;color:var(--warm)">預覽</button>`;
+
         tr.innerHTML = `
 <td><div class="bt-ttl">${esc(b.title)}</div></td>
 <td><span class="spill ${st}">${SLBL[st]}</span></td>
@@ -1594,7 +1599,7 @@
 <td class="bt-pg">${b.pageCount} 頁</td>
 <td class="bt-dt">${dt}</td>
 <td><div class="bt-acts">
-  <button class="bbtn rd" onclick="openB('${b.id}')">閱讀</button>
+  ${readBtnHtml}
   <button class="bbtn cp" onclick="copyL('${b.id}','${st}')">複製連結</button>
   <button class="bbtn ed" onclick="openEdit('${b.id}')">編輯</button>
   <button class="bbtn dl" onclick="confirmDel('${b.id}','${esc(b.title)}')">刪除</button>
@@ -1668,9 +1673,13 @@
     /* EDIT MODAL */
     let pendingCoverDataUrl = null;
 
+    function previewB(id) { window.open(getReaderUrl(id) + '&preview=1', '_blank') }
+    function previewCurrent() { if (editId) previewB(editId) }
+
     function openEdit(id) {
       const b = allBooks.find(x => x.id === id); if (!b) return;
       editId = id; isPub = b.published || false; pendingCoverDataUrl = null; passDeleted = false;
+      document.getElementById('modal-preview-btn').style.display = ''; // 💡 顯示預覽按鈕
       document.getElementById('m-title').value = b.title || '';
       document.getElementById('m-notes').value = b.notes || '';
       document.getElementById('m-cat').value = b.category || '';
@@ -1727,6 +1736,7 @@
 
     function openAdd() {
       editId = null; isPub = false; pendingCoverDataUrl = null; passDeleted = false;
+      document.getElementById('modal-preview-btn').style.display = 'none'; // 💡 隱藏預覽按鈕
       document.getElementById('mt').textContent = '新增書籍';
       document.getElementById('m-title').value = '';
       document.getElementById('m-notes').value = '';
@@ -1815,8 +1825,113 @@
         const user = await window.auth.getCurrentUser();
         const now = new Date().toISOString();
         const b = allBooks.find(x => x.id === editId);
+        if (!b) throw new Error('找不到該書籍');
 
-        // 準備更新的資料 (僅保留確定存在的根欄位)
+        let newCoverUrl = b.coverUrl;
+        let finalPageUrls = b.pageUrls || [];
+
+        // 1. 處理封面圖片上傳/刪除
+        if (pendingCoverDataUrl === 'REMOVE') {
+          newCoverUrl = '';
+        } else if (pendingCoverDataUrl && pendingCoverDataUrl.startsWith('data:')) {
+          saveBtn.textContent = '正在上傳新封面…';
+          const matches = pendingCoverDataUrl.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            const mimeType = matches[1];
+            const b64 = matches[2].replace(/\s/g, '');
+            const byteCharacters = atob(b64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let k = 0; k < byteCharacters.length; k++) {
+              byteNumbers[k] = byteCharacters.charCodeAt(k);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: mimeType });
+
+            let ext = 'jpg';
+            if (mimeType.includes('webp')) ext = 'webp';
+            else if (mimeType.includes('png')) ext = 'png';
+
+            const filePath = `ebooks/${editId}/cover.${ext}`;
+            const { error: uploadError } = await window.adminSb.storage
+              .from('brochures')
+              .upload(filePath, blob, {
+                contentType: mimeType,
+                cacheControl: '31536000',
+                upsert: true
+              });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = window.adminSb.storage
+              .from('brochures')
+              .getPublicUrl(filePath);
+
+            newCoverUrl = publicUrl;
+          }
+        }
+
+        // 2. 處理重新上傳 PDF (覆蓋頁面圖片)
+        if (reuploadPages && reuploadPages.length > 0) {
+          saveBtn.textContent = '正在刪除舊頁面圖片…';
+          const dirPath = `ebooks/${editId}`;
+          const { data: existingFiles, error: listErr } = await window.adminSb.storage
+            .from('brochures')
+            .list(dirPath);
+
+          if (!listErr && existingFiles && existingFiles.length > 0) {
+            // 僅刪除 page_ 開頭的檔案，保留 cover 檔案
+            const filesToRemove = existingFiles
+              .filter(f => f.name.startsWith('page_'))
+              .map(f => `${dirPath}/${f.name}`);
+            
+            if (filesToRemove.length > 0) {
+              await window.adminSb.storage.from('brochures').remove(filesToRemove);
+            }
+          }
+
+          // 依序轉換並上傳新頁面
+          finalPageUrls = [];
+          for (let p = 0; p < reuploadPages.length; p++) {
+            saveBtn.textContent = `正在上傳新頁面 ${p + 1} / ${reuploadPages.length}…`;
+            const matches = reuploadPages[p].match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+            if (!matches || matches.length !== 3) {
+              throw new Error(`第 ${p + 1} 頁的圖片格式不正確`);
+            }
+            const mimeType = matches[1];
+            const b64 = matches[2].replace(/\s/g, '');
+            const byteCharacters = atob(b64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let k = 0; k < byteCharacters.length; k++) {
+              byteNumbers[k] = byteCharacters.charCodeAt(k);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: mimeType });
+
+            let ext = 'jpg';
+            if (mimeType.includes('webp')) ext = 'webp';
+            else if (mimeType.includes('png')) ext = 'png';
+
+            const filePath = `ebooks/${editId}/page_${String(p + 1).padStart(3, '0')}.${ext}`;
+            const { error: uploadError } = await window.adminSb.storage
+              .from('brochures')
+              .upload(filePath, blob, {
+                contentType: mimeType,
+                cacheControl: '31536000',
+                upsert: true
+              });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = window.adminSb.storage
+              .from('brochures')
+              .getPublicUrl(filePath);
+
+            finalPageUrls.push(publicUrl);
+          }
+        }
+
+        saveBtn.textContent = '正在寫入資料庫…';
+
         // 準備更新的資料 (根據診斷結果，同步更新根欄位)
         const updates = {
           title: document.getElementById('m-title').value.trim(),
@@ -1830,6 +1945,9 @@
             notes: document.getElementById('m-notes').value,
             category: document.getElementById('m-cat').value,
             isPublished: isPub,
+            coverUrl: newCoverUrl,
+            publishedImages: finalPageUrls,
+            pageCount: finalPageUrls.length,
             expiresAt: toISO(document.getElementById('m-uat').value),
             publishedAt: toISO(document.getElementById('m-pat').value),
             passwordHash: document.getElementById('m-pass').value ? await sha256(document.getElementById('m-pass').value) : (passDeleted ? null : (b.raw?.data?.passwordHash || null))
@@ -1857,7 +1975,11 @@
             unpublishAt: d.expiresAt,
             category: updates.category,
             notes: d.notes,
-            hasPassword: !!d.passwordHash
+            coverUrl: newCoverUrl,
+            pageUrls: finalPageUrls,
+            pageCount: finalPageUrls.length,
+            hasPassword: !!d.passwordHash,
+            raw: data // 💡 關鍵：更新原始資料以供後續編輯使用！
           };
         }
 

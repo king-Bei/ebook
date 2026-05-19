@@ -220,6 +220,20 @@
       flex-shrink: 0;
     }
 
+    .tb-preview {
+      font-family: 'DM Mono', monospace;
+      font-size: .65rem;
+      color: #e67e22;
+      background: rgba(230, 126, 34, 0.12);
+      border: 1px solid rgba(230, 126, 34, 0.3);
+      border-radius: 6px;
+      padding: 3px 7px;
+      margin-left: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+
     .tb-spacer {
       flex: 1;
     }
@@ -1156,7 +1170,8 @@
 
       .tb-sep,
       .tb-book-title,
-      .tb-cloud {
+      .tb-cloud,
+      .tb-preview {
         display: none !important;
       }
 
@@ -1241,6 +1256,7 @@
       <div class="tb-sep"></div>
       <div class="tb-book-title" id="tb-title">—</div>
       <span class="tb-cloud" id="tb-cloud" style="display:none">☁ 雲端</span>
+      <span class="tb-preview" id="tb-preview" style="display:none">👁 預覽模式</span>
       <div class="tb-spacer"></div>
 
       <!-- Share bar (shows after upload) -->
@@ -1530,15 +1546,19 @@
         const isPublished = d.isPublished ?? b.is_published ?? false;
         const expiresAt = d.expiresAt || b.expires_at || null;
 
-        console.log('Reader Diagnostic:', { isPublished, pagesCount: pagesList.length, expiresAt, rawData: d });
+        // 取得 url 參數判斷是否為預覽模式
+        const urlParams = new URLSearchParams(location.search);
+        const isPreview = urlParams.get('preview') === '1';
+
+        console.log('Reader Diagnostic:', { isPublished, isPreview, pagesCount: pagesList.length, expiresAt, rawData: d });
         
-        if (!isPublished || pagesList.length === 0) {
+        if ((!isPublished && !isPreview) || pagesList.length === 0) {
           alert(`無法閱讀診斷：\n1. 發佈狀態(isPublished)：${isPublished}\n2. 頁數(pages)：${pagesList.length}\n3. 過期時間：${expiresAt}\n\n完整 Meta 資料：\n${JSON.stringify(d, null, 2)}`);
           hide('progress-screen');
           showUnavailable({ reason: 'not_published' });
           return;
         }
-        if (expiresAt && new Date(expiresAt) < now) {
+        if (expiresAt && new Date(expiresAt) < now && !isPreview) {
           hide('progress-screen');
           showUnavailable({ reason: 'expired' });
           return;
@@ -1559,6 +1579,11 @@
         bookId = b.id;
         shareUrl = getReaderUrl(b.id);
         isCloudBook = true;
+
+        if (isPreview) {
+          const previewBadge = document.getElementById('tb-preview');
+          if (previewBadge) previewBadge.style.display = '';
+        }
 
         pages = pagesList;
         thumbs = pages;
