@@ -469,34 +469,72 @@
     }
 
     .startbtn {
-      margin-top: 12px;
-      padding: 10px 22px;
-      background: linear-gradient(135deg, var(--warm), var(--warm2));
-      color: var(--ink);
-      border: none;
-      border-radius: 10px;
+      margin-top: 16px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, #d4b47a, #9e753b);
+      color: #1a1208;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
       font-family: 'Noto Serif TC', serif;
-      font-size: .86rem;
+      font-size: 0.9rem;
       font-weight: 700;
+      letter-spacing: 1px;
       cursor: pointer;
-      transition: all .2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: none;
       align-items: center;
-      gap: 7px
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(200, 169, 110, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .startbtn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -150%;
+      width: 150%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: skewX(-20deg);
+      transition: none;
+    }
+
+    .startbtn:hover::before {
+      left: 150%;
+      transition: all 0.75s ease-in-out;
     }
 
     .startbtn.vis {
-      display: inline-flex
+      display: inline-flex;
     }
 
     .startbtn:hover {
-      transform: translateY(-1px)
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(200, 169, 110, 0.45);
+      background: linear-gradient(135deg, #e3c58c, #b3884c);
+    }
+
+    .startbtn:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 15px rgba(200, 169, 110, 0.3);
     }
 
     .startbtn:disabled {
-      opacity: .5;
+      opacity: 0.4;
       cursor: not-allowed;
-      transform: none
+      transform: none !important;
+      box-shadow: none !important;
+      background: #3a3225 !important;
+      color: rgba(255, 255, 255, 0.3) !important;
+      border-color: rgba(255, 255, 255, 0.05);
     }
 
     /* BOOKS TABLE */
@@ -2408,13 +2446,40 @@ ${item.id ? `<a class="qi-lk" href="${httpsOrigin()}/?book=${item.id}" target="_
           document.getElementById(`qb${i}`).style.width = '100%';
           results.push({ title, id: bookId });
 
+          const rawDbObj = {
+            id: bookId,
+            title: title,
+            created_at: now,
+            updated_at: now,
+            last_modified_by: user?.name || 'Admin',
+            category: '',
+            status: '已發佈',
+            data: {
+              publishedImages: pageUrls,
+              pageCount: pageUrls.length,
+              notes: '',
+              isPublished: true,
+              expiresAt: '',
+              publishedAt: now
+            }
+          };
+
           allBooks.unshift({
             id: bookId,
+            raw: rawDbObj,
             title,
+            category: '',
             pageCount: pageUrls.length,
+            pageUrls: pageUrls,
+            coverUrl: pageUrls[0] || '',
             createdAt: now,
-            published: false,
-            views: 0
+            updatedAt: now,
+            views: 0,
+            published: true,
+            publishAt: now,
+            unpublishAt: '',
+            notes: '',
+            hasPassword: false
           });
 
         } catch (err) {
