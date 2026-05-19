@@ -1048,6 +1048,130 @@
       background: #ffffff0a
     }
 
+    /* Realtime Notification Banner */
+    .rt-notify {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50px);
+      z-index: 9999;
+      background: rgba(28, 24, 16, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(200, 169, 110, 0.4);
+      border-radius: 14px;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(200, 169, 110, 0.15);
+      animation: rtSlideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      max-width: 90%;
+      width: 580px;
+      color: #f5f0e8;
+    }
+
+    .rt-notify.fade-out {
+      animation: rtSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
+    }
+
+    @keyframes rtSlideDown {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    @keyframes rtSlideUp {
+      from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50px);
+      }
+    }
+
+    .rt-notify-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      font-size: 0.85rem;
+    }
+
+    .rt-icon {
+      font-size: 1.1rem;
+      animation: rtBellRing 1.5s ease infinite;
+      display: inline-block;
+    }
+
+    @keyframes rtBellRing {
+      0%, 100% { transform: rotate(0); }
+      10%, 30%, 50%, 70%, 90% { transform: rotate(-8deg); }
+      20%, 40%, 60%, 80% { transform: rotate(8deg); }
+    }
+
+    .rt-text {
+      flex: 1;
+      line-height: 1.4;
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .rt-text strong {
+      color: var(--warm);
+      font-weight: 700;
+    }
+
+    .rt-btn {
+      background: linear-gradient(135deg, #d4b47a, #9e753b);
+      color: #1a1208;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-family: 'Noto Serif TC', serif;
+      font-weight: 700;
+      font-size: 0.76rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(200, 169, 110, 0.2);
+    }
+
+    .rt-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4);
+      background: linear-gradient(135deg, #e3c58c, #b3884c);
+    }
+
+    .rt-btn:disabled {
+      background: #4a4235;
+      color: #ffffff44;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .rt-close {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 4px;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rt-close:hover {
+      color: #e74c3c;
+    }
+
     @media(max-width:768px) {
       #sb {
         display: none
@@ -1519,6 +1643,88 @@
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
+    /* REALTIME SUBSCRIPTION FOR NEW BOOKS */
+    let realtimeChannel = null;
+
+    function initRealtimeSubscription() {
+      if (realtimeChannel) return; // 避免重複訂閱
+
+      console.log('🔌 正在初始化資料庫即時監聽...');
+      realtimeChannel = window.adminSb
+        .channel('admin-ebooks-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'ebooks'
+          },
+          (payload) => {
+            const newBook = payload.new;
+            if (!newBook) return;
+
+            // 1. 檢查這本書是否已經在我們的列表中了 (如果是當前分頁自己上傳的就不用重複提示)
+            const exists = allBooks.some(b => b.id === newBook.id);
+            if (exists) return;
+
+            console.log('📢 偵測到新書籍新增：', newBook.title);
+            
+            // 2. 顯示高質感的即時通知橫幅
+            showRealtimeNotification(newBook.title || '新書籍');
+          }
+        )
+        .subscribe((status) => {
+          console.log('⚡ Supabase Realtime 訂閱狀態:', status);
+        });
+    }
+
+    function showRealtimeNotification(bookTitle) {
+      // 移除現有的通知 (如果有的話)
+      const existing = document.getElementById('realtime-notify');
+      if (existing) existing.remove();
+
+      const container = document.createElement('div');
+      container.id = 'realtime-notify';
+      container.className = 'rt-notify';
+      
+      container.innerHTML = `
+        <div class="rt-notify-content">
+          <span class="rt-icon">📢</span>
+          <span class="rt-text">系統偵測到有新書籍發佈：《<strong>${escHtml(bookTitle)}</strong>》</span>
+          <button class="rt-btn" onclick="refreshEbooksFromNotify()">點此重新整理書目</button>
+        </div>
+        <button class="rt-close" onclick="this.parentElement.remove()">✕</button>
+      `;
+
+      document.body.appendChild(container);
+
+      // 8 秒後自動淡出移除
+      setTimeout(() => {
+        if (container.parentElement) {
+          container.classList.add('fade-out');
+          setTimeout(() => container.remove(), 500);
+        }
+      }, 8000);
+    }
+
+    function refreshEbooksFromNotify() {
+      const btn = document.querySelector('.rt-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '載入中…';
+      }
+      loadAllBooks().then(() => {
+        const container = document.getElementById('realtime-notify');
+        if (container) container.remove();
+        toast('✓ 書目已更新為最新狀態', 'ok');
+      });
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     /* LOGIN */
     async function initAdmin() {
       const user = await window.auth.getCurrentUser();
@@ -1529,7 +1735,9 @@
         const logoutBtn = document.querySelector('.tbout');
         if (logoutBtn) logoutBtn.innerHTML = `<span>${user.name || '管理員'} 登出</span>`;
 
-        loadAllBooks(); // 從 Supabase 載入資料
+        loadAllBooks().then(() => {
+          initRealtimeSubscription();
+        });
       }
     }
 
