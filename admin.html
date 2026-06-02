@@ -1460,10 +1460,14 @@
           <input class="minp" type="text" id="m-title" placeholder="書籍名稱">
         </div>
         <div class="mf" style="margin:0">
-          <div class="mlbl"><svg viewBox="0 0 24 24">
-              <path
-                d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 2 2 2h11c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
-            </svg>分類</div>
+          <div class="mlbl" style="display:flex;justify-content:space-between;width:100%;align-items:center">
+            <span style="display:flex;align-items:center;gap:4px">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px">
+                <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 2 2 2h11c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
+              </svg>分類
+            </span>
+            <button onclick="promptNewCat(event)" style="background:transparent;border:none;color:var(--warm);cursor:pointer;font-family:DM Mono,monospace;font-size:.65rem;text-decoration:underline;margin-left:auto">➕ 新增</button>
+          </div>
           <select class="minp" id="m-cat">
             <option value="">— 無分類 —</option>
           </select>
@@ -2367,12 +2371,81 @@
       });
     }
 
+    function promptNewCat(e) {
+      if (e) e.preventDefault();
+      const newCat = prompt('請輸入新的書籍分類名稱：');
+      if (newCat) {
+        const trimmed = newCat.trim();
+        if (trimmed) {
+          const sel = document.getElementById('m-cat');
+          let exists = false;
+          for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === trimmed) {
+              sel.selectedIndex = i;
+              exists = true;
+              break;
+            }
+          }
+          if (!exists) {
+            const opt = document.createElement('option');
+            opt.value = trimmed;
+            opt.textContent = trimmed;
+            sel.appendChild(opt);
+            sel.value = trimmed;
+          }
+        }
+      }
+    }
+
     async function addCat() {
-      toast('💡 請直接在書籍編輯視窗輸入新分類並儲存', 'ok');
+      const inp = document.getElementById('cat-inp');
+      const val = inp.value.trim();
+      if (!val) { toast('⚠ 請輸入分類名稱', 'er'); return; }
+      if (allCats.includes(val)) { toast('💡 分類已存在', 'ok'); return; }
+      
+      allCats.push(val);
+      renderCats();
+      inp.value = '';
+      toast('✓ 分類已暫時建立（請至書籍編輯視窗將書籍歸至此分類以永久儲存）', 'ok');
     }
 
     async function delCat(name) {
-      toast('💡 分類隨書籍自動管理，無需手動刪除', 'ok');
+      const booksInCat = allBooks.filter(b => b.category === name);
+      if (booksInCat.length > 0) {
+        if (confirm(`確定要刪除分類「${name}」嗎？此分類下有 ${booksInCat.length} 本書，這些書將被變更為「無分類」。`)) {
+          try {
+            const now = new Date().toISOString();
+            toast('⏳ 正在更新書籍分類...', 'ok');
+            
+            const promises = booksInCat.map(async (b) => {
+              const updates = {
+                category: '',
+                updated_at: now,
+                data: {
+                  ... (b.raw?.data || {}),
+                  category: ''
+                }
+              };
+              return window.adminSb
+                .from('ebooks')
+                .update(updates)
+                .eq('id', b.id);
+            });
+            
+            await Promise.all(promises);
+            await loadAllBooks();
+            await loadCats();
+            toast('✓ 分類已刪除，相關書籍已變更為無分類', 'ok');
+          } catch (err) {
+            console.error('Delete category error:', err);
+            toast('⚠ 刪除分類失敗', 'er');
+          }
+        }
+      } else {
+        allCats = allCats.filter(c => c !== name);
+        renderCats();
+        toast('✓ 已移除分類', 'ok');
+      }
     }
 
     /* STATS */
